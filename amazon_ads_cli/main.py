@@ -13,11 +13,37 @@ from ad_api.base import Marketplaces
 DEFAULT_CREDENTIALS_PATH = os.path.expanduser("~/.config/python-ad-api/credentials.yml")
 
 
+def _check_path():
+    """Check if the CLI is accessible in PATH and warn if not."""
+    import shutil
+    import sys
+
+    if not shutil.which("amz-ads"):
+        print(
+            "\n⚠️  Note: 'amz-ads' is not in your PATH.",
+            file=sys.stderr,
+        )
+        print(
+            "   You can still use: python3 -m amazon_ads_cli",
+            file=sys.stderr,
+        )
+        print(
+            "   To add to PATH, add this to your shell config:",
+            file=sys.stderr,
+        )
+        print(
+            f'   export PATH="{sys.prefix}/bin:$PATH"',
+            file=sys.stderr,
+        )
+        print("", file=sys.stderr)
+
+
 @click.group()
 @click.option("--profile", "-p", default="default", help="Credential profile")
 @click.pass_context
 def cli(ctx, profile):
     """Amazon Ads CLI - Manage campaigns, keywords, and reports."""
+    _check_path()
     ctx.ensure_object(dict)
     ctx.obj["profile"] = profile
 
