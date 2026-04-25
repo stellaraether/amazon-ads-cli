@@ -1,8 +1,8 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="amazon-ads-cli",
-    version="0.1.1",
+    version="0.1.2",
     description="CLI tool for Amazon Advertising API v3",
     author="Lunan Li",
     author_email="lunan@stellaraether.com",
