@@ -28,28 +28,48 @@ default:
 
 ```bash
 # List campaigns
-amz-ads campaigns list
+python3 -m amazon_ads_cli.main campaigns list
 
 # Pause campaign
-amz-ads campaigns pause <campaign-id>
+python3 -m amazon_ads_cli.main campaigns pause <campaign-id>
 
 # Enable campaign
-amz-ads campaigns enable <campaign-id>
+python3 -m amazon_ads_cli.main campaigns enable <campaign-id>
 ```
 
 ### Keywords
 
 ```bash
 # List keywords for a campaign
-amz-ads keywords list <campaign-id>
+python3 -m amazon_ads_cli.main keywords list <campaign-id>
 ```
 
 ### Reports
 
 ```bash
 # Get today's performance
-amz-ads report today
+python3 -m amazon_ads_cli.main report today
 ```
+
+## Development
+
+```bash
+# Clone repo
+git clone https://github.com/stellaraether/amazon-ads-cli.git
+cd amazon-ads-cli
+
+# Install in editable mode
+pip install -e .
+
+# Run locally
+python3 -m amazon_ads_cli.main campaigns list
+```
+
+## Requirements
+
+- Python 3.8+
+- `python-amazon-ad-api` library
+- Amazon Advertising API credentials
 
 ## License
 
