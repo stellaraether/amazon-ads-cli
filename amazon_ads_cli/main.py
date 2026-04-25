@@ -2,11 +2,15 @@
 """Amazon Ads CLI - Command line interface for Amazon Advertising API v3."""
 
 import json
+import os
 from datetime import datetime, timedelta
 
 import click
+import yaml
 from ad_api.api import reports, sponsored_products
 from ad_api.base import Marketplaces
+
+DEFAULT_CREDENTIALS_PATH = os.path.expanduser("~/.config/python-ad-api/credentials.yml")
 
 
 @click.group()
@@ -16,6 +20,96 @@ def cli(ctx, profile):
     """Amazon Ads CLI - Manage campaigns, keywords, and reports."""
     ctx.ensure_object(dict)
     ctx.obj["profile"] = profile
+
+
+@cli.group()
+def auth():
+    """Authentication commands."""
+    pass
+
+
+@auth.command("setup")
+@click.option(
+    "--path", default=DEFAULT_CREDENTIALS_PATH, help="Path to save credentials"
+)
+@click.pass_context
+def auth_setup(ctx, path):
+    """Interactive setup for Amazon Ads API credentials."""
+    click.echo("🔐 Amazon Ads API Credential Setup")
+    click.echo("=" * 50)
+    click.echo()
+    click.echo("You'll need the following from your Amazon Developer account:")
+    click.echo("  1. Refresh Token (from LWA authorization)")
+    click.echo("  2. Client ID (from your app registration)")
+    click.echo("  3. Client Secret (from your app registration)")
+    click.echo("  4. Profile ID (your Amazon Ads account ID)")
+    click.echo()
+
+    profile = click.prompt("Profile name", default="default")
+    refresh_token = click.prompt("Refresh token", hide_input=True)
+    client_id = click.prompt("Client ID")
+    client_secret = click.prompt("Client secret", hide_input=True)
+    profile_id = click.prompt("Profile ID (numeric)")
+
+    credentials = {
+        "version": "1.0",
+        profile: {
+            "refresh_token": refresh_token,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "profile_id": profile_id,
+        },
+    }
+
+    # Merge with existing if present
+    if os.path.exists(path):
+        try:
+            with open(path, "r") as f:
+                existing = yaml.safe_load(f) or {}
+            existing[profile] = credentials[profile]
+            credentials = existing
+            click.echo(f"\n📝 Merged with existing credentials at {path}")
+        except Exception as e:
+            click.echo(f"⚠️  Could not read existing file: {e}")
+
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        yaml.dump(credentials, f, default_flow_style=False, sort_keys=False)
+
+    click.echo(f"✅ Credentials saved to {path}")
+    click.echo(f"   Profile: {profile}")
+    click.echo(f"   Profile ID: {profile_id}")
+    click.echo()
+    click.echo(
+        "You can now use: python -m amazon_ads_cli.main --profile {profile} campaigns list"
+    )
+
+
+@auth.command("show")
+@click.option(
+    "--path", default=DEFAULT_CREDENTIALS_PATH, help="Path to credentials file"
+)
+@click.pass_context
+def auth_show(ctx, path):
+    """Show configured profiles (without secrets)."""
+    if not os.path.exists(path):
+        click.echo(f"❌ No credentials file found at {path}")
+        click.echo("Run: python -m amazon_ads_cli.main auth setup")
+        return
+
+    with open(path, "r") as f:
+        creds = yaml.safe_load(f) or {}
+
+    click.echo(f"\n📄 Credentials file: {path}")
+    click.echo("-" * 40)
+
+    for profile, data in creds.items():
+        if profile == "version":
+            continue
+        click.echo(f"Profile: {profile}")
+        click.echo(f"  Client ID: {data.get('client_id', 'N/A')[:20]}...")
+        click.echo(f"  Profile ID: {data.get('profile_id', 'N/A')}")
+        click.echo()
 
 
 @cli.group()
