@@ -301,7 +301,12 @@ def list_negatives(ctx, campaign_id):
     """List negative keywords for a campaign."""
     result = sponsored_products.NegativeKeywordsV3(
         marketplace=Marketplaces.NA
-    ).list_negative_keywords(body={"campaignIdFilter": {"include": [campaign_id]}})
+    ).list_negative_keywords(
+        body={
+            "campaignIdFilter": {"include": [campaign_id]},
+            "stateFilter": {"include": ["ENABLED"]},
+        }
+    )
     negatives = result.payload.get("negativeKeywords", [])
 
     click.echo(f"\n{'Negative Keyword':<35} {'Match':<15}")
@@ -314,6 +319,7 @@ def list_negatives(ctx, campaign_id):
 
 @negatives.command("add")
 @click.argument("campaign-id")
+@click.argument("ad-group-id")
 @click.argument("keyword-text")
 @click.option(
     "--match-type",
@@ -321,16 +327,17 @@ def list_negatives(ctx, campaign_id):
     help="Match type: NEGATIVE_EXACT, NEGATIVE_PHRASE",
 )
 @click.pass_context
-def add_negative(ctx, campaign_id, keyword_text, match_type):
+def add_negative(ctx, campaign_id, ad_group_id, keyword_text, match_type):
     """Add a negative keyword to a campaign."""
     try:
         sponsored_products.NegativeKeywordsV3(
             marketplace=Marketplaces.NA
-        ).create_negative_keywords(
+        ).create_negative_keyword(
             body={
                 "negativeKeywords": [
                     {
                         "campaignId": campaign_id,
+                        "adGroupId": ad_group_id,
                         "keywordText": keyword_text,
                         "matchType": match_type,
                         "state": "ENABLED",
@@ -339,6 +346,22 @@ def add_negative(ctx, campaign_id, keyword_text, match_type):
             }
         )
         click.echo(f"✅ Added negative keyword: {keyword_text} ({match_type})")
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+
+
+@negatives.command("remove")
+@click.argument("negative-keyword-id")
+@click.pass_context
+def remove_negative(ctx, negative_keyword_id):
+    """Remove a negative keyword by ID."""
+    try:
+        sponsored_products.NegativeKeywordsV3(
+            marketplace=Marketplaces.NA
+        ).delete_negative_keywords(
+            body={"negativeKeywordIdFilter": {"include": [negative_keyword_id]}}
+        )
+        click.echo(f"✅ Removed negative keyword: {negative_keyword_id}")
     except Exception as e:
         click.echo(f"❌ Error: {e}")
 
