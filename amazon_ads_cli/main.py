@@ -489,6 +489,63 @@ def list_all_targets(ctx):
         click.echo(f"{camp_id:<20} {ag_id:<20} {expr:<40} {state}")
 
 
+@targets.command("create")
+@click.argument("campaign-id")
+@click.argument("ad-group-id")
+@click.argument("asin")
+@click.option("--bid", default=1.0, help="Bid amount")
+@click.pass_context
+def create_target(ctx, campaign_id, ad_group_id, asin, bid):
+    """Create an ASIN target in a campaign ad group."""
+    try:
+        result = sponsored_products.TargetsV3(
+            marketplace=Marketplaces.NA
+        ).create_product_targets(
+            body={
+                "targetingClauses": [
+                    {
+                        "campaignId": campaign_id,
+                        "adGroupId": ad_group_id,
+                        "expression": [{"value": asin, "type": "ASIN_SAME_AS"}],
+                        "expressionType": "MANUAL",
+                        "state": "ENABLED",
+                        "bid": bid,
+                    }
+                ]
+            }
+        )
+        success = result.payload.get("targetingClauses", {}).get("success", [])
+        errors = result.payload.get("targetingClauses", {}).get("error", [])
+        if success:
+            target_id = success[0].get("targetId")
+            click.echo(f"✅ Created ASIN target: {asin} (ID: {target_id}) - ${bid}")
+        elif errors:
+            msg = (
+                errors[0]
+                .get("errors", [{}])[0]
+                .get("errorValue", {})
+                .get("otherError", {})
+                .get("message", "Unknown error")
+            )
+            click.echo(f"❌ Error: {msg}")
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+
+
+@targets.command("delete")
+@click.argument("target-id")
+@click.pass_context
+def delete_target(ctx, target_id):
+    """Delete a product target by ID."""
+    try:
+        sponsored_products.TargetsV3(
+            marketplace=Marketplaces.NA
+        ).delete_product_targets(body={"targetIdFilter": {"include": [target_id]}})
+        click.echo(f"✅ Deleted target: {target_id}")
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+
+
 @cli.group()
 def report():
     """Report commands."""
