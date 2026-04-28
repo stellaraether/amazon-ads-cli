@@ -153,14 +153,40 @@ def list_campaigns(ctx):
     )
     campaigns = result.payload.get("campaigns", [])
 
-    click.echo(f"\n{'Campaign':<30} {'State':<10} {'Budget':<10} {'Type'}")
-    click.echo("-" * 65)
+    click.echo(f"\n{'ID':<20} {'Campaign':<28} {'State':<10} {'Budget':<10} {'Type'}")
+    click.echo("-" * 85)
     for camp in campaigns:
-        name = camp["name"][:28]
+        cid = camp["campaignId"][:18]
+        name = camp["name"][:26]
         state = camp["state"]
         budget = f"${camp['budget']['budget']}"
         ctype = camp.get("targetingType", "N/A")
-        click.echo(f"{name:<30} {state:<10} {budget:<10} {ctype}")
+        click.echo(f"{cid:<20} {name:<28} {state:<10} {budget:<10} {ctype}")
+
+
+@campaigns.command("show")
+@click.argument("campaign-id")
+@click.pass_context
+def show_campaign(ctx, campaign_id):
+    """Show full details for a campaign."""
+    result = sponsored_products.CampaignsV3(marketplace=Marketplaces.NA).list_campaigns(
+        body={"campaignIdFilter": {"include": [campaign_id]}}
+    )
+    campaigns = result.payload.get("campaigns", [])
+    if not campaigns:
+        click.echo(f"❌ Campaign {campaign_id} not found")
+        return
+
+    camp = campaigns[0]
+    click.echo(f"\n📋 Campaign: {camp['name']}")
+    click.echo(f"   ID: {camp['campaignId']}")
+    click.echo(f"   State: {camp['state']}")
+    click.echo(
+        f"   Budget: ${camp['budget']['budget']}/{camp['budget']['budgetType'].lower()}"
+    )
+    click.echo(f"   Type: {camp.get('targetingType', 'N/A')}")
+    click.echo(f"   Start: {camp.get('startDate', 'N/A')}")
+    click.echo(f"   End: {camp.get('endDate', 'N/A') or 'No end date'}")
 
 
 @campaigns.command("pause")
@@ -214,6 +240,36 @@ def set_budget(ctx, campaign_id, amount):
 
 
 @cli.group()
+def adgroups():
+    """Ad group management commands."""
+    pass
+
+
+@adgroups.command("list")
+@click.option("--campaign-id", help="Filter by campaign ID")
+@click.pass_context
+def list_adgroups(ctx, campaign_id):
+    """List all ad groups."""
+    body = {}
+    if campaign_id:
+        body["campaignIdFilter"] = {"include": [campaign_id]}
+
+    result = sponsored_products.AdGroupsV3(marketplace=Marketplaces.NA).list_ad_groups(
+        body=body
+    )
+    ad_groups = result.payload.get("adGroups", [])
+
+    click.echo(f"\n{'ID':<20} {'Campaign ID':<20} {'Name':<30} {'State'}")
+    click.echo("-" * 85)
+    for ag in ad_groups:
+        ag_id = ag["adGroupId"][:18]
+        camp_id = ag["campaignId"][:18]
+        name = ag["name"][:28]
+        state = ag["state"]
+        click.echo(f"{ag_id:<20} {camp_id:<20} {name:<30} {state}")
+
+
+@cli.group()
 def keywords():
     """Keyword management commands."""
     pass
@@ -241,6 +297,28 @@ def list_keywords(ctx, campaign_id):
         bid = f"${kw['bid']}"
         state = kw["state"]
         click.echo(f"{text:<35} {match:<10} {bid:<8} {state}")
+
+
+@keywords.command("list-all")
+@click.pass_context
+def list_all_keywords(ctx):
+    """List all keywords across all campaigns."""
+    result = sponsored_products.KeywordsV3(marketplace=Marketplaces.NA).list_keywords(
+        body={}
+    )
+    keywords = result.payload.get("keywords", [])
+
+    click.echo(
+        f"\n{'Campaign ID':<20} {'Keyword':<35} {'Match':<10} {'Bid':<8} {'State'}"
+    )
+    click.echo("-" * 90)
+    for kw in keywords:
+        camp_id = kw.get("campaignId", "N/A")[:18]
+        text = kw["keywordText"][:33]
+        match = kw["matchType"]
+        bid = f"${kw['bid']}"
+        state = kw["state"]
+        click.echo(f"{camp_id:<20} {text:<35} {match:<10} {bid:<8} {state}")
 
 
 @keywords.command("add")
@@ -317,6 +395,24 @@ def list_negatives(ctx, campaign_id):
         click.echo(f"{text:<35} {match:<15}")
 
 
+@negatives.command("list-all")
+@click.pass_context
+def list_all_negatives(ctx):
+    """List all negative keywords across all campaigns."""
+    result = sponsored_products.NegativeKeywordsV3(
+        marketplace=Marketplaces.NA
+    ).list_negative_keywords(body={"stateFilter": {"include": ["ENABLED"]}})
+    negatives = result.payload.get("negativeKeywords", [])
+
+    click.echo(f"\n{'Campaign ID':<20} {'Negative Keyword':<35} {'Match':<15}")
+    click.echo("-" * 80)
+    for neg in negatives:
+        camp_id = neg.get("campaignId", "N/A")[:18]
+        text = neg["keywordText"][:33]
+        match = neg["matchType"]
+        click.echo(f"{camp_id:<20} {text:<35} {match:<15}")
+
+
 @negatives.command("add")
 @click.argument("campaign-id")
 @click.argument("ad-group-id")
@@ -364,6 +460,33 @@ def remove_negative(ctx, negative_keyword_id):
         click.echo(f"✅ Removed negative keyword: {negative_keyword_id}")
     except Exception as e:
         click.echo(f"❌ Error: {e}")
+
+
+@cli.group()
+def targets():
+    """Product target management commands."""
+    pass
+
+
+@targets.command("list-all")
+@click.pass_context
+def list_all_targets(ctx):
+    """List all product targets across all campaigns."""
+    result = sponsored_products.TargetsV3(
+        marketplace=Marketplaces.NA
+    ).list_product_targets(body={})
+    targets_list = result.payload.get("productTargets", [])
+
+    click.echo(
+        f"\n{'Campaign ID':<20} {'Ad Group ID':<20} {'Expression':<40} {'State'}"
+    )
+    click.echo("-" * 95)
+    for t in targets_list:
+        camp_id = t.get("campaignId", "N/A")[:18]
+        ag_id = t.get("adGroupId", "N/A")[:18]
+        expr = str(t.get("expression", []))[:38]
+        state = t.get("state", "N/A")
+        click.echo(f"{camp_id:<20} {ag_id:<20} {expr:<40} {state}")
 
 
 @cli.group()
