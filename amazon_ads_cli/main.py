@@ -489,13 +489,13 @@ def list_all_targets(ctx):
         click.echo(f"{camp_id:<20} {ag_id:<20} {expr:<40} {state}")
 
 
-@targets.command("create")
+@targets.command("create-asin")
 @click.argument("campaign-id")
 @click.argument("ad-group-id")
 @click.argument("asin")
 @click.option("--bid", default=1.0, help="Bid amount")
 @click.pass_context
-def create_target(ctx, campaign_id, ad_group_id, asin, bid):
+def create_asin_target(ctx, campaign_id, ad_group_id, asin, bid):
     """Create an ASIN target in a campaign ad group."""
     try:
         result = sponsored_products.TargetsV3(
