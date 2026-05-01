@@ -12,6 +12,7 @@ setup(
         "click>=8.0",
         "python-amazon-ad-api>=0.8.0",
         "requests>=2.27.0",
+        "pyyaml>=6.0",
     ],
     entry_points={
         "console_scripts": [
