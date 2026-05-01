@@ -58,24 +58,35 @@ def auth():
 @click.option(
     "--path", default=DEFAULT_CREDENTIALS_PATH, help="Path to save credentials"
 )
+@click.option("--profile", default="default", help="Credential profile name")
+@click.option("--refresh-token", help="Refresh token")
+@click.option("--client-id", help="Client ID")
+@click.option("--client-secret", help="Client secret")
+@click.option("--profile-id", help="Profile ID (numeric)")
 @click.pass_context
-def auth_setup(ctx, path):
-    """Interactive setup for Amazon Ads API credentials."""
+def auth_setup(ctx, path, profile, refresh_token, client_id, client_secret, profile_id):
+    """Set up Amazon Ads API credentials.
+
+    When flags are omitted, falls back to interactive prompts.
+    """
     click.echo("🔐 Amazon Ads API Credential Setup")
     click.echo("=" * 50)
     click.echo()
-    click.echo("You'll need the following from your Amazon Developer account:")
-    click.echo("  1. Refresh Token (from LWA authorization)")
-    click.echo("  2. Client ID (from your app registration)")
-    click.echo("  3. Client Secret (from your app registration)")
-    click.echo("  4. Profile ID (your Amazon Ads account ID)")
-    click.echo()
 
-    profile = click.prompt("Profile name", default="default")
-    refresh_token = click.prompt("Refresh token", hide_input=True)
-    client_id = click.prompt("Client ID")
-    client_secret = click.prompt("Client secret", hide_input=True)
-    profile_id = click.prompt("Profile ID (numeric)")
+    interactive = not all([refresh_token, client_id, client_secret, profile_id])
+    if interactive:
+        click.echo("You'll need the following from your Amazon Developer account:")
+        click.echo("  1. Refresh Token (from LWA authorization)")
+        click.echo("  2. Client ID (from your app registration)")
+        click.echo("  3. Client Secret (from your app registration)")
+        click.echo("  4. Profile ID (your Amazon Ads account ID)")
+        click.echo()
+
+    profile = profile or click.prompt("Profile name", default="default")
+    refresh_token = refresh_token or click.prompt("Refresh token", hide_input=True)
+    client_id = client_id or click.prompt("Client ID")
+    client_secret = client_secret or click.prompt("Client secret", hide_input=True)
+    profile_id = profile_id or click.prompt("Profile ID (numeric)")
 
     credentials = {
         "version": "1.0",
