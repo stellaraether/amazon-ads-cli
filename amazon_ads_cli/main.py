@@ -73,7 +73,9 @@ def auth_setup(ctx, path, profile, refresh_token, client_id, client_secret, prof
     click.echo("=" * 50)
     click.echo()
 
-    interactive = not all([refresh_token, client_id, client_secret, profile_id])
+    interactive = not all(
+        [refresh_token, client_id, client_secret, profile_id is not None]
+    )
     if interactive:
         click.echo("You'll need the following from your Amazon Developer account:")
         click.echo("  1. Refresh Token (from LWA authorization)")
@@ -86,7 +88,8 @@ def auth_setup(ctx, path, profile, refresh_token, client_id, client_secret, prof
     refresh_token = refresh_token or click.prompt("Refresh token", hide_input=True)
     client_id = client_id or click.prompt("Client ID")
     client_secret = client_secret or click.prompt("Client secret", hide_input=True)
-    profile_id = profile_id or click.prompt("Profile ID (numeric)")
+    if profile_id is None:
+        profile_id = click.prompt("Profile ID (numeric)")
 
     credentials = {
         "version": "1.0",
