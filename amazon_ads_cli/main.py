@@ -55,9 +55,7 @@ def auth():
 
 
 @auth.command("setup")
-@click.option(
-    "--path", default=DEFAULT_CREDENTIALS_PATH, help="Path to save credentials"
-)
+@click.option("--path", default=DEFAULT_CREDENTIALS_PATH, help="Path to save credentials")
 @click.option("--profile", default="default", help="Credential profile name")
 @click.option("--refresh-token", help="Refresh token")
 @click.option("--client-id", help="Client ID")
@@ -73,9 +71,7 @@ def auth_setup(ctx, path, profile, refresh_token, client_id, client_secret, prof
     click.echo("=" * 50)
     click.echo()
 
-    interactive = not all(
-        [refresh_token, client_id, client_secret, profile_id is not None]
-    )
+    interactive = not all([refresh_token, client_id, client_secret, profile_id is not None])
     if interactive:
         click.echo("You'll need the following from your Amazon Developer account:")
         click.echo("  1. Refresh Token (from LWA authorization)")
@@ -120,15 +116,11 @@ def auth_setup(ctx, path, profile, refresh_token, client_id, client_secret, prof
     click.echo(f"   Profile: {profile}")
     click.echo(f"   Profile ID: {profile_id}")
     click.echo()
-    click.echo(
-        "You can now use: python -m amazon_ads_cli.main --profile {profile} campaigns list"
-    )
+    click.echo("You can now use: python -m amazon_ads_cli.main --profile {profile} campaigns list")
 
 
 @auth.command("show")
-@click.option(
-    "--path", default=DEFAULT_CREDENTIALS_PATH, help="Path to credentials file"
-)
+@click.option("--path", default=DEFAULT_CREDENTIALS_PATH, help="Path to credentials file")
 @click.pass_context
 def auth_show(ctx, path):
     """Show configured profiles (without secrets)."""
@@ -162,9 +154,7 @@ def campaigns():
 @click.pass_context
 def list_campaigns(ctx):
     """List all campaigns."""
-    result = sponsored_products.CampaignsV3(marketplace=Marketplaces.NA).list_campaigns(
-        body={}
-    )
+    result = sponsored_products.CampaignsV3(marketplace=Marketplaces.NA).list_campaigns(body={})
     campaigns = result.payload.get("campaigns", [])
 
     click.echo(f"\n{'ID':<20} {'Campaign':<28} {'State':<10} {'Budget':<10} {'Type'}")
@@ -195,9 +185,7 @@ def show_campaign(ctx, campaign_id):
     click.echo(f"\n📋 Campaign: {camp['name']}")
     click.echo(f"   ID: {camp['campaignId']}")
     click.echo(f"   State: {camp['state']}")
-    click.echo(
-        f"   Budget: ${camp['budget']['budget']}/{camp['budget']['budgetType'].lower()}"
-    )
+    click.echo(f"   Budget: ${camp['budget']['budget']}/{camp['budget']['budgetType'].lower()}")
     click.echo(f"   Type: {camp.get('targetingType', 'N/A')}")
     click.echo(f"   Start: {camp.get('startDate', 'N/A')}")
     click.echo(f"   End: {camp.get('endDate', 'N/A') or 'No end date'}")
@@ -268,9 +256,7 @@ def list_adgroups(ctx, campaign_id):
     if campaign_id:
         body["campaignIdFilter"] = {"include": [campaign_id]}
 
-    result = sponsored_products.AdGroupsV3(marketplace=Marketplaces.NA).list_ad_groups(
-        body=body
-    )
+    result = sponsored_products.AdGroupsV3(marketplace=Marketplaces.NA).list_ad_groups(body=body)
     ad_groups = result.payload.get("adGroups", [])
 
     click.echo(f"\n{'ID':<20} {'Campaign ID':<20} {'Name':<30} {'State'}")
@@ -294,14 +280,8 @@ def keywords():
 @click.pass_context
 def list_keywords(ctx, campaign_id):
     """List keywords for a campaign."""
-    result = sponsored_products.KeywordsV3(marketplace=Marketplaces.NA).list_keywords(
-        body={}
-    )
-    keywords = [
-        k
-        for k in result.payload.get("keywords", [])
-        if k.get("campaignId") == campaign_id
-    ]
+    result = sponsored_products.KeywordsV3(marketplace=Marketplaces.NA).list_keywords(body={})
+    keywords = [k for k in result.payload.get("keywords", []) if k.get("campaignId") == campaign_id]
 
     click.echo(f"\n{'Keyword':<35} {'Match':<10} {'Bid':<8} {'State'}")
     click.echo("-" * 70)
@@ -317,14 +297,10 @@ def list_keywords(ctx, campaign_id):
 @click.pass_context
 def list_all_keywords(ctx):
     """List all keywords across all campaigns."""
-    result = sponsored_products.KeywordsV3(marketplace=Marketplaces.NA).list_keywords(
-        body={}
-    )
+    result = sponsored_products.KeywordsV3(marketplace=Marketplaces.NA).list_keywords(body={})
     keywords = result.payload.get("keywords", [])
 
-    click.echo(
-        f"\n{'Campaign ID':<20} {'Keyword':<35} {'Match':<10} {'Bid':<8} {'State'}"
-    )
+    click.echo(f"\n{'Campaign ID':<20} {'Keyword':<35} {'Match':<10} {'Bid':<8} {'State'}")
     click.echo("-" * 90)
     for kw in keywords:
         camp_id = kw.get("campaignId", "N/A")[:18]
@@ -391,9 +367,7 @@ def negatives():
 @click.pass_context
 def list_negatives(ctx, campaign_id):
     """List negative keywords for a campaign."""
-    result = sponsored_products.NegativeKeywordsV3(
-        marketplace=Marketplaces.NA
-    ).list_negative_keywords(
+    result = sponsored_products.NegativeKeywordsV3(marketplace=Marketplaces.NA).list_negative_keywords(
         body={
             "campaignIdFilter": {"include": [campaign_id]},
             "stateFilter": {"include": ["ENABLED"]},
@@ -413,9 +387,9 @@ def list_negatives(ctx, campaign_id):
 @click.pass_context
 def list_all_negatives(ctx):
     """List all negative keywords across all campaigns."""
-    result = sponsored_products.NegativeKeywordsV3(
-        marketplace=Marketplaces.NA
-    ).list_negative_keywords(body={"stateFilter": {"include": ["ENABLED"]}})
+    result = sponsored_products.NegativeKeywordsV3(marketplace=Marketplaces.NA).list_negative_keywords(
+        body={"stateFilter": {"include": ["ENABLED"]}}
+    )
     negatives = result.payload.get("negativeKeywords", [])
 
     click.echo(f"\n{'Campaign ID':<20} {'Negative Keyword':<35} {'Match':<15}")
@@ -440,9 +414,7 @@ def list_all_negatives(ctx):
 def add_negative(ctx, campaign_id, ad_group_id, keyword_text, match_type):
     """Add a negative keyword to a campaign."""
     try:
-        sponsored_products.NegativeKeywordsV3(
-            marketplace=Marketplaces.NA
-        ).create_negative_keyword(
+        sponsored_products.NegativeKeywordsV3(marketplace=Marketplaces.NA).create_negative_keyword(
             body={
                 "negativeKeywords": [
                     {
@@ -466,9 +438,7 @@ def add_negative(ctx, campaign_id, ad_group_id, keyword_text, match_type):
 def remove_negative(ctx, negative_keyword_id):
     """Remove a negative keyword by ID."""
     try:
-        sponsored_products.NegativeKeywordsV3(
-            marketplace=Marketplaces.NA
-        ).delete_negative_keywords(
+        sponsored_products.NegativeKeywordsV3(marketplace=Marketplaces.NA).delete_negative_keywords(
             body={"negativeKeywordIdFilter": {"include": [negative_keyword_id]}}
         )
         click.echo(f"✅ Removed negative keyword: {negative_keyword_id}")
@@ -486,14 +456,10 @@ def targets():
 @click.pass_context
 def list_all_targets(ctx):
     """List all product targets across all campaigns."""
-    result = sponsored_products.TargetsV3(
-        marketplace=Marketplaces.NA
-    ).list_product_targets(body={})
+    result = sponsored_products.TargetsV3(marketplace=Marketplaces.NA).list_product_targets(body={})
     targets_list = result.payload.get("productTargets", [])
 
-    click.echo(
-        f"\n{'Campaign ID':<20} {'Ad Group ID':<20} {'Expression':<40} {'State'}"
-    )
+    click.echo(f"\n{'Campaign ID':<20} {'Ad Group ID':<20} {'Expression':<40} {'State'}")
     click.echo("-" * 95)
     for t in targets_list:
         camp_id = t.get("campaignId", "N/A")[:18]
@@ -509,9 +475,9 @@ def list_all_targets(ctx):
 def delete_target(ctx, target_id):
     """Delete a product target by ID."""
     try:
-        sponsored_products.TargetsV3(
-            marketplace=Marketplaces.NA
-        ).delete_product_targets(body={"targetIdFilter": {"include": [target_id]}})
+        sponsored_products.TargetsV3(marketplace=Marketplaces.NA).delete_product_targets(
+            body={"targetIdFilter": {"include": [target_id]}}
+        )
         click.echo(f"✅ Deleted target: {target_id}")
     except Exception as e:
         click.echo(f"❌ Error: {e}")
@@ -532,9 +498,7 @@ def asin_targets():
 def add_asin_target(ctx, campaign_id, ad_group_id, asin, bid):
     """Add an ASIN target to a campaign ad group."""
     try:
-        result = sponsored_products.TargetsV3(
-            marketplace=Marketplaces.NA
-        ).create_product_targets(
+        result = sponsored_products.TargetsV3(marketplace=Marketplaces.NA).create_product_targets(
             body={
                 "targetingClauses": [
                     {
@@ -572,9 +536,9 @@ def add_asin_target(ctx, campaign_id, ad_group_id, asin, bid):
 def remove_asin_target(ctx, target_id):
     """Remove an ASIN target by ID."""
     try:
-        sponsored_products.TargetsV3(
-            marketplace=Marketplaces.NA
-        ).delete_product_targets(body={"targetIdFilter": {"include": [target_id]}})
+        sponsored_products.TargetsV3(marketplace=Marketplaces.NA).delete_product_targets(
+            body={"targetIdFilter": {"include": [target_id]}}
+        )
         click.echo(f"✅ Removed ASIN target: {target_id}")
     except Exception as e:
         click.echo(f"❌ Error: {e}")
@@ -618,9 +582,7 @@ def report_today(ctx):
 
     try:
         # Submit report
-        result = reports.Reports(marketplace=Marketplaces.NA).post_report(
-            body=report_body
-        )
+        result = reports.Reports(marketplace=Marketplaces.NA).post_report(body=report_body)
         report_id = result.payload["reportId"]
 
         click.echo(f"Report submitted: {report_id}")
@@ -630,9 +592,7 @@ def report_today(ctx):
         import time
 
         for i in range(20):
-            result = reports.Reports(marketplace=Marketplaces.NA).get_report(
-                reportId=report_id
-            )
+            result = reports.Reports(marketplace=Marketplaces.NA).get_report(reportId=report_id)
             status = result.payload.get("status")
 
             if status == "COMPLETED":
@@ -646,9 +606,7 @@ def report_today(ctx):
                 data = gzip.decompress(response.content)
                 report_data = json.loads(data)
 
-                click.echo(
-                    f"\n{'Campaign':<30} {'Impr':>8} {'Clicks':>7} {'Spend':>8} {'Sales':>8} {'ACOS'}"
-                )
+                click.echo(f"\n{'Campaign':<30} {'Impr':>8} {'Clicks':>7} {'Spend':>8} {'Sales':>8} {'ACOS'}")
                 click.echo("-" * 75)
 
                 for row in report_data:
@@ -659,9 +617,7 @@ def report_today(ctx):
                     sales = float(row.get("sales14d", 0) or 0)
                     acos = (cost / sales * 100) if sales > 0 else 0
 
-                    click.echo(
-                        f"{camp_name:<30} {impr:>8} {clicks:>7} ${cost:>7.2f} ${sales:>7.2f} {acos:>5.1f}%"
-                    )
+                    click.echo(f"{camp_name:<30} {impr:>8} {clicks:>7} ${cost:>7.2f} ${sales:>7.2f} {acos:>5.1f}%")
 
                 return
 
@@ -683,9 +639,7 @@ def report_today(ctx):
 def report_status(ctx, report_id):
     """Check status of an existing report."""
     try:
-        result = reports.Reports(marketplace=Marketplaces.NA).get_report(
-            reportId=report_id
-        )
+        result = reports.Reports(marketplace=Marketplaces.NA).get_report(reportId=report_id)
         payload = result.payload
 
         status = payload.get("status")
@@ -731,9 +685,7 @@ def report_status(ctx, report_id):
 def report_download(ctx, report_id, fmt, output):
     """Download a completed report by ID."""
     try:
-        result = reports.Reports(marketplace=Marketplaces.NA).get_report(
-            reportId=report_id
-        )
+        result = reports.Reports(marketplace=Marketplaces.NA).get_report(reportId=report_id)
         status = result.payload.get("status")
 
         if status != "COMPLETED":
@@ -780,9 +732,7 @@ def report_download(ctx, report_id, fmt, output):
 
             if "searchTerm" in columns:
                 # Search terms report
-                report_data.sort(
-                    key=lambda x: float(x.get("cost", 0) or 0), reverse=True
-                )
+                report_data.sort(key=lambda x: float(x.get("cost", 0) or 0), reverse=True)
                 output_text = f"\n{'Search Term':<40} {'Campaign':<20} {'Spend':>8} {'Sales':>8} {'ACOS'}\n"
                 output_text += "-" * 90 + "\n"
                 for row in report_data[:50]:
@@ -851,9 +801,7 @@ def search_terms_report(ctx, days):
     }
 
     try:
-        result = reports.Reports(marketplace=Marketplaces.NA).post_report(
-            body=report_body
-        )
+        result = reports.Reports(marketplace=Marketplaces.NA).post_report(body=report_body)
         report_id = result.payload["reportId"]
 
         click.echo(f"Report submitted: {report_id}")
@@ -862,9 +810,7 @@ def search_terms_report(ctx, days):
         import time
 
         for i in range(30):
-            result = reports.Reports(marketplace=Marketplaces.NA).get_report(
-                reportId=report_id
-            )
+            result = reports.Reports(marketplace=Marketplaces.NA).get_report(reportId=report_id)
             status = result.payload.get("status")
 
             if status == "COMPLETED":
@@ -878,13 +824,9 @@ def search_terms_report(ctx, days):
                 report_data = json.loads(data)
 
                 # Sort by cost (highest first)
-                report_data.sort(
-                    key=lambda x: float(x.get("cost", 0) or 0), reverse=True
-                )
+                report_data.sort(key=lambda x: float(x.get("cost", 0) or 0), reverse=True)
 
-                click.echo(
-                    f"\n{'Search Term':<40} {'Campaign':<20} {'Spend':>8} {'Sales':>8} {'ACOS'}"
-                )
+                click.echo(f"\n{'Search Term':<40} {'Campaign':<20} {'Spend':>8} {'Sales':>8} {'ACOS'}")
                 click.echo("-" * 90)
 
                 for row in report_data[:20]:
@@ -894,9 +836,7 @@ def search_terms_report(ctx, days):
                     sales = float(row.get("sales14d", 0) or 0)
                     acos = (cost / sales * 100) if sales > 0 else 0
 
-                    click.echo(
-                        f"{term:<40} {camp:<20} ${cost:>7.2f} ${sales:>7.2f} {acos:>5.1f}%"
-                    )
+                    click.echo(f"{term:<40} {camp:<20} ${cost:>7.2f} ${sales:>7.2f} {acos:>5.1f}%")
 
                 return
 
