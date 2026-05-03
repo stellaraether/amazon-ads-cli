@@ -1,0 +1,38 @@
+name: Check Version Bump PR
+
+on:
+  pull_request:
+    paths:
+      - 'amazon_ads_cli/__init__.py'
+
+jobs:
+  check-isolated-version-bump:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify version bump is isolated
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+
+          CHANGED_FILES=$(git diff --name-only "$BASE" "$HEAD")
+
+          if ! echo "$CHANGED_FILES" | grep -q '^amazon_ads_cli/__init__\.py$'; then
+            echo "⏭️ amazon_ads_cli/__init__.py not changed; skipping version bump isolation check."
+            exit 0
+          fi
+
+          OTHER_FILES=$(echo "$CHANGED_FILES" | grep -vE '^amazon_ads_cli/__init__\.py$|^amazon_ads_cli/main\.py$|^setup\.py$|^pyproject\.toml$|^CLAUDE\.md$|^\.gitignore$|^tests/|^\.github/workflows/' || true)
+
+          if [ -n "$OTHER_FILES" ]; then
+            echo "❌ Version bump PRs must only modify amazon_ads_cli/__init__.py, amazon_ads_cli/main.py, setup.py, pyproject.toml, CLAUDE.md, .gitignore, tests/ (and workflow files)."
+            echo "Found other changed files:"
+            echo "$OTHER_FILES"
+            exit 1
+          fi
+
+          echo "✅ Version bump is isolated."
