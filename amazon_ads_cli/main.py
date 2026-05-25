@@ -48,6 +48,22 @@ def cli(ctx, profile):
     ctx.obj["profile"] = profile
 
 
+@cli.command()
+def update():
+    """Update to the latest version from PyPI."""
+    import subprocess
+    import sys
+
+    click.echo("Updating amazon-ads-cli...")
+    try:
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "amazon-ads-cli"]
+        )
+        click.echo("Update complete. Run amz-ads --version to verify.")
+    except subprocess.CalledProcessError as e:
+        click.echo(f"Update failed: {e}")
+
+
 @cli.group()
 def auth():
     """Authentication commands."""
