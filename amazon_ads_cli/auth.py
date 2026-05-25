@@ -11,8 +11,9 @@ class AdsAuth:
 
     DEFAULT_CREDENTIALS_PATH = Path.home() / ".config" / "python-ad-api" / "credentials.yml"
 
-    def __init__(self, credentials_path: str = None):
+    def __init__(self, credentials_path: str = None, profile: str = "default"):
         self.credentials_path = Path(credentials_path or self.DEFAULT_CREDENTIALS_PATH)
+        self.profile = profile
         self.credentials = self._load_credentials()
 
     def _load_credentials(self) -> Optional[dict]:
@@ -22,3 +23,17 @@ class AdsAuth:
 
         with open(self.credentials_path, "r") as f:
             return yaml.safe_load(f)
+
+    def get_profile_credentials(self) -> Optional[dict]:
+        """Return flat credentials dict for the configured profile."""
+        if self.credentials is None:
+            return None
+        profile_creds = self.credentials.get(self.profile)
+        if not isinstance(profile_creds, dict):
+            return None
+        return {
+            "refresh_token": profile_creds.get("refresh_token"),
+            "client_id": profile_creds.get("client_id"),
+            "client_secret": profile_creds.get("client_secret"),
+            "profile_id": profile_creds.get("profile_id"),
+        }

@@ -23,6 +23,11 @@ default:
   client_id: "test-client-id"
   client_secret: "test-client-secret"
   profile_id: "123456789"
+other:
+  refresh_token: "other-refresh-token"
+  client_id: "other-client-id"
+  client_secret: "other-client-secret"
+  profile_id: "987654321"
 """
             )
             path = f.name
@@ -45,3 +50,23 @@ default:
         """Test default credentials path."""
         auth = AdsAuth()
         assert auth.credentials_path == Path.home() / ".config" / "python-ad-api" / "credentials.yml"
+
+    def test_get_profile_credentials_default(self, temp_credentials):
+        """Test extracting default profile credentials."""
+        auth = AdsAuth(temp_credentials)
+        creds = auth.get_profile_credentials()
+        assert creds["refresh_token"] == "test-refresh-token"
+        assert creds["client_id"] == "test-client-id"
+        assert creds["profile_id"] == "123456789"
+
+    def test_get_profile_credentials_other(self, temp_credentials):
+        """Test extracting non-default profile credentials."""
+        auth = AdsAuth(temp_credentials, profile="other")
+        creds = auth.get_profile_credentials()
+        assert creds["refresh_token"] == "other-refresh-token"
+        assert creds["profile_id"] == "987654321"
+
+    def test_get_profile_credentials_missing(self, temp_credentials):
+        """Test extracting missing profile credentials."""
+        auth = AdsAuth(temp_credentials, profile="nonexistent")
+        assert auth.get_profile_credentials() is None
