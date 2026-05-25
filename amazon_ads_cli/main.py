@@ -10,6 +10,8 @@ import yaml
 from ad_api.api import reports, sponsored_products
 from ad_api.base import Marketplaces
 
+from amazon_ads_cli import __version__
+
 DEFAULT_CREDENTIALS_PATH = os.path.expanduser("~/.config/python-ad-api/credentials.yml")
 
 
@@ -39,6 +41,7 @@ def _check_path():
 
 
 @click.group()
+@click.version_option(version=__version__, prog_name="amz-ads")
 @click.option("--profile", "-p", default="default", help="Credential profile")
 @click.pass_context
 def cli(ctx, profile):
@@ -56,9 +59,7 @@ def update():
 
     click.echo("Updating amazon-ads-cli...")
     try:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "--upgrade", "amazon-ads-cli"]
-        )
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "amazon-ads-cli"])
         click.echo("Update complete. Run amz-ads --version to verify.")
     except subprocess.CalledProcessError as e:
         click.echo(f"Update failed: {e}")
