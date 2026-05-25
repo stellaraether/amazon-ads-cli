@@ -58,12 +58,22 @@ def _check_path():
 def _ensure_auth_client(ctx):
     """Lazily create auth and client if not already present."""
     if "client" not in ctx.obj:
-        auth = AdsAuth(ctx.obj.get("credentials_path"))
+        auth = AdsAuth(
+            ctx.obj.get("credentials_path"),
+            profile=ctx.obj.get("profile", "default"),
+        )
         if auth.credentials is None:
             click.echo("Error: No credentials found. Run 'amz-ads auth setup' first.", err=True)
             raise click.Abort()
+        credentials = auth.get_profile_credentials()
+        if credentials is None:
+            click.echo(
+                f"Error: Profile '{auth.profile}' not found in credentials file.",
+                err=True,
+            )
+            raise click.Abort()
         ctx.obj["auth"] = auth
-        ctx.obj["client"] = AdsAPIClient(auth)
+        ctx.obj["client"] = AdsAPIClient(credentials)
     return ctx.obj["auth"], ctx.obj["client"]
 
 
@@ -86,9 +96,11 @@ def handle_errors(f):
 @click.version_option(version=__version__, prog_name="amz-ads")
 @click.group()
 @click.option("--credentials", "-c", help="Path to credentials YAML file")
+@click.option("--profile", "-p", default="default", help="Credential profile name")
 @click.pass_context
-def cli(ctx, credentials):
+def cli(ctx, credentials, profile):
     """Amazon Ads CLI - Manage campaigns, keywords, and reports."""
     _check_path()
     ctx.ensure_object(dict)
     ctx.obj["credentials_path"] = credentials
+    ctx.obj["profile"] = profile
