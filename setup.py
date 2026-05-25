@@ -20,6 +20,7 @@ setup(
         "python-amazon-ad-api>=0.8.0",
         "requests>=2.27.0",
         "pyyaml>=6.0",
+        "typing_extensions",
     ],
     entry_points={
         "console_scripts": [
