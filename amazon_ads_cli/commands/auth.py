@@ -68,8 +68,7 @@ def register_auth_commands(cli_group):
         click.echo()
 
         has_creds = all([refresh_token, client_id, client_secret])
-        has_profile = country is not None
-        interactive = not has_creds or not has_profile
+        interactive = not has_creds or country is None
 
         if interactive:
             click.echo("You'll need the following from your Amazon Developer account:")
