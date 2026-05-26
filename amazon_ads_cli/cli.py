@@ -12,7 +12,7 @@ from . import __version__
 from .auth import AdsAuth
 from .client import AdsAPIClient
 
-DEFAULT_CREDENTIALS_PATH = os.path.expanduser("~/.config/python-ad-api/credentials.yml")
+DEFAULT_CREDENTIALS_PATH = os.path.expanduser("~/.config/amazon-ads-cli/credentials.yml")
 
 
 def _check_path():
@@ -60,20 +60,13 @@ def _ensure_auth_client(ctx):
     if "client" not in ctx.obj:
         auth = AdsAuth(
             ctx.obj.get("credentials_path"),
-            profile=ctx.obj.get("profile", "default"),
+            profile=ctx.obj["profile"],
         )
         if auth.credentials is None:
             click.echo("Error: No credentials found. Run 'amz-ads auth setup' first.", err=True)
             raise click.Abort()
-        credentials = auth.get_profile_credentials()
-        if credentials is None:
-            click.echo(
-                f"Error: Profile '{auth.profile}' not found in credentials file.",
-                err=True,
-            )
-            raise click.Abort()
         ctx.obj["auth"] = auth
-        ctx.obj["client"] = AdsAPIClient(credentials)
+        ctx.obj["client"] = AdsAPIClient(auth.credentials)
     return ctx.obj["auth"], ctx.obj["client"]
 
 

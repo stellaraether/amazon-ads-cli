@@ -3,6 +3,7 @@
 import os
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -34,12 +35,19 @@ other:
         yield path
         os.unlink(path)
 
-    def test_load_credentials(self, temp_credentials):
-        """Test credentials loading."""
+    def test_load_credentials_default(self, temp_credentials):
+        """Test loading default profile credentials."""
         auth = AdsAuth(temp_credentials)
-        assert auth.credentials["default"]["refresh_token"] == "test-refresh-token"
-        assert auth.credentials["default"]["client_id"] == "test-client-id"
-        assert auth.credentials["default"]["profile_id"] == "123456789"
+        assert auth.credentials["refresh_token"] == "test-refresh-token"
+        assert auth.credentials["client_id"] == "test-client-id"
+        assert auth.credentials["profile_id"] == "123456789"
+
+    def test_load_credentials_other(self, temp_credentials):
+        """Test loading non-default profile credentials."""
+        auth = AdsAuth(temp_credentials, profile="other")
+        assert auth.credentials["refresh_token"] == "other-refresh-token"
+        assert auth.credentials["client_id"] == "other-client-id"
+        assert auth.credentials["profile_id"] == "987654321"
 
     def test_missing_credentials(self):
         """Test missing credentials file."""
@@ -49,24 +57,14 @@ other:
     def test_default_path(self):
         """Test default credentials path."""
         auth = AdsAuth()
-        assert auth.credentials_path == Path.home() / ".config" / "python-ad-api" / "credentials.yml"
+        assert auth.credentials_path == Path.home() / ".config" / "amazon-ads-cli" / "credentials.yml"
 
-    def test_get_profile_credentials_default(self, temp_credentials):
-        """Test extracting default profile credentials."""
+    def test_invalidate(self, temp_credentials):
+        """Test invalidate clears caches."""
         auth = AdsAuth(temp_credentials)
-        creds = auth.get_profile_credentials()
-        assert creds["refresh_token"] == "test-refresh-token"
-        assert creds["client_id"] == "test-client-id"
-        assert creds["profile_id"] == "123456789"
-
-    def test_get_profile_credentials_other(self, temp_credentials):
-        """Test extracting non-default profile credentials."""
-        auth = AdsAuth(temp_credentials, profile="other")
-        creds = auth.get_profile_credentials()
-        assert creds["refresh_token"] == "other-refresh-token"
-        assert creds["profile_id"] == "987654321"
-
-    def test_get_profile_credentials_missing(self, temp_credentials):
-        """Test extracting missing profile credentials."""
-        auth = AdsAuth(temp_credentials, profile="nonexistent")
-        assert auth.get_profile_credentials() is None
+        with patch("ad_api.auth.access_token_client.cache") as mock_cache, patch(
+            "ad_api.auth.access_token_client.grantless_cache"
+        ) as mock_grantless_cache:
+            auth.invalidate()
+            mock_cache.clear.assert_called_once()
+            mock_grantless_cache.clear.assert_called_once()
