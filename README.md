@@ -10,7 +10,7 @@ pip install amazon-ads-cli
 
 ## Setup
 
-Create credentials file at `~/.config/python-ad-api/credentials.yml`:
+Create credentials file at `~/.config/amazon-ads-cli/credentials.yml`:
 
 ```yaml
 version: '1.0'

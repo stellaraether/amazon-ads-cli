@@ -181,3 +181,15 @@ def register_auth_commands(cli_group):
             if "country" in data:
                 click.echo(f"  Country: {data['country']}")
             click.echo()
+
+    @auth.command("invalidate")
+    @click.pass_context
+    def auth_invalidate(ctx):
+        """Invalidate cached access tokens."""
+        from ..auth import AdsAuth
+
+        auth = AdsAuth(
+            ctx.obj.get("credentials_path"),
+            profile=ctx.obj["profile"],
+        )
+        auth.invalidate()

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a small Python CLI tool (`amazon-ads-cli`) for managing Amazon Advertising API v3 campaigns, keywords, negative keywords, ASIN targets, and reports. The entire CLI is implemented in a single file: `amazon_ads_cli/main.py`.
+This is a small Python CLI tool (`amazon-ads-cli`) for managing Amazon Advertising API v3 campaigns, keywords, negative keywords, ASIN targets, and reports.
 
 ## Development Commands
 
@@ -18,12 +18,12 @@ This is a small Python CLI tool (`amazon-ads-cli`) for managing Amazon Advertisi
 
 ## Architecture
 
-- **Single-module CLI**: All commands are defined in `amazon_ads_cli/main.py` using `click` groups and subcommands.
+- **Modular CLI**: Commands are defined in `amazon_ads_cli/commands/` using `click` groups and subcommands.
 - **API wrapper**: Uses the third-party `python-amazon-ad-api` library (`ad_api.api.sponsored_products`, `ad_api.api.reports`).
 - **Hardcoded marketplace**: All API calls use `Marketplaces.NA` (North America). There is no multi-marketplace support yet.
-- **Credential storage**: Credentials are read from `~/.config/python-ad-api/credentials.yml` (YAML format with named profiles). The `auth setup` command interactively creates this file.
+- **Credential storage**: Credentials are read from `~/.config/amazon-ads-cli/credentials.yml` (YAML format with named profiles). The `auth setup` command interactively creates this file.
 - **Command groups**: `auth`, `campaigns`, `adgroups`, `keywords`, `negatives`, `targets`, `asin-targets`, `report`.
-- **Entry points**: `setup.py` registers the console script `amz-ads=amazon_ads_cli.main:cli`. `__main__.py` allows `python -m amazon_ads_cli`.
+- **Entry points**: `setup.py` registers the console script `amz-ads=amazon_ads_cli.cli:cli`. `__main__.py` allows `python -m amazon_ads_cli`.
 
 ## Release Process
 
@@ -40,5 +40,5 @@ The `test.yml` and `codeql.yml` workflows both trigger on `merge_group`, so the 
 
 ## Important Notes
 
-- There are no unit tests yet. The CI still runs `pytest --cov=amazon_ads_cli --cov-report=xml` and uploads to Codecov.
+- Unit tests exist in `tests/`. The CI runs `pytest --cov=amazon_ads_cli --cov-report=xml` and uploads to Codecov.
 - The CLI imports `yaml` directly in `main.py` but `pyyaml` is not explicitly listed in `setup.py` install_requires; it is pulled in transitively via `python-amazon-ad-api`.

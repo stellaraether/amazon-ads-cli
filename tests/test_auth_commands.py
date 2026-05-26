@@ -11,3 +11,9 @@ class TestAuthCommands:
         result = runner.invoke(cli, ["auth", "show", "--path", "/nonexistent/creds.yml"])
         assert result.exit_code == 0
         assert "No credentials file found" in result.output
+
+    def test_auth_invalidate(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["auth", "invalidate"])
+        assert result.exit_code == 0
+        assert "Token cache invalidated" in result.output
