@@ -57,9 +57,8 @@ def register_auth_commands(cli_group):
     @click.option("--client-id", help="Client ID")
     @click.option("--client-secret", help="Client secret")
     @click.option("--country", help="Marketplace country code (e.g. US, CA, BR)")
-    @click.option("--profile-id", help="Profile ID (numeric) — skips country lookup")
     @click.pass_context
-    def auth_setup(ctx, path, profile, refresh_token, client_id, client_secret, country, profile_id):
+    def auth_setup(ctx, path, profile, refresh_token, client_id, client_secret, country):
         """Set up Amazon Ads API credentials.
 
         When flags are omitted, falls back to interactive prompts.
@@ -69,7 +68,7 @@ def register_auth_commands(cli_group):
         click.echo()
 
         has_creds = all([refresh_token, client_id, client_secret])
-        has_profile = profile_id is not None or country is not None
+        has_profile = country is not None
         interactive = not has_creds or not has_profile
 
         if interactive:
@@ -84,46 +83,44 @@ def register_auth_commands(cli_group):
         client_id = client_id or click.prompt("Client ID")
         client_secret = client_secret or click.prompt("Client secret", hide_input=True)
 
+        profile_id = None
         resolved_country = None
-        if profile_id is not None:
-            resolved_country = country
-        else:
-            if interactive and country is None:
-                click.echo("\n🌎 Looking up available marketplaces...")
+        if interactive and country is None:
+            click.echo("\n🌎 Looking up available marketplaces...")
 
-            result, resolved_country, error = _resolve_profile(refresh_token, client_id, client_secret, country=country)
+        result, resolved_country, error = _resolve_profile(refresh_token, client_id, client_secret, country=country)
 
-            if isinstance(result, list):
-                if not result:
-                    error = "No profiles found."
-                elif country is None:
-                    click.echo("\nAvailable marketplaces:")
-                    for i, p in enumerate(result, 1):
-                        cc = p.get("countryCode", "N/A")
-                        name = p.get("accountInfo", {}).get("name", "N/A")
-                        click.echo(f"  {i}. {cc} — {name}")
+        if isinstance(result, list):
+            if not result:
+                error = "No profiles found."
+            elif country is None:
+                click.echo("\nAvailable marketplaces:")
+                for i, p in enumerate(result, 1):
+                    cc = p.get("countryCode", "N/A")
+                    name = p.get("accountInfo", {}).get("name", "N/A")
+                    click.echo(f"  {i}. {cc} — {name}")
 
-                    choice = click.prompt(
-                        "Select marketplace by number",
-                        type=click.IntRange(1, len(result)),
-                    )
-                    selected = result[choice - 1]
-                    profile_id = str(selected["profileId"])
-                    resolved_country = selected.get("countryCode")
-                    click.echo(f"✅ Selected {resolved_country} (Profile ID: {profile_id})")
-                else:
-                    # Should not happen — country was provided but returned a list
-                    error = f"Unexpected response while resolving country {country}."
-            elif isinstance(result, str):
-                profile_id = result
-                if resolved_country:
-                    click.echo(f"✅ Resolved {resolved_country} to Profile ID: {profile_id}")
+                choice = click.prompt(
+                    "Select marketplace by number",
+                    type=click.IntRange(1, len(result)),
+                )
+                selected = result[choice - 1]
+                profile_id = str(selected["profileId"])
+                resolved_country = selected.get("countryCode")
+                click.echo(f"✅ Selected {resolved_country} (Profile ID: {profile_id})")
+            else:
+                # Should not happen — country was provided but returned a list
+                error = f"Unexpected response while resolving country {country}."
+        elif isinstance(result, str):
+            profile_id = result
+            if resolved_country:
+                click.echo(f"✅ Resolved {resolved_country} to Profile ID: {profile_id}")
 
-            if profile_id is None:
-                click.echo(f"⚠️  Could not resolve profile: {error}")
-                if not interactive:
-                    raise click.Abort()
-                profile_id = click.prompt("Profile ID (numeric)")
+        if profile_id is None:
+            click.echo(f"⚠️  Could not resolve profile: {error}")
+            if not interactive:
+                raise click.Abort()
+            profile_id = click.prompt("Profile ID (numeric)")
 
         credentials = {
             "version": "1.0",
