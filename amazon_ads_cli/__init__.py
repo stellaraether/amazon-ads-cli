@@ -1,2 +1,2 @@
 # Amazon Ads CLI
-__version__ = "0.1.14"
+__version__ = "0.1.15"
