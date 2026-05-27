@@ -20,3 +20,4 @@ wheels/
 *.egg
 .coverage
 coverage.xml
+.venv/
