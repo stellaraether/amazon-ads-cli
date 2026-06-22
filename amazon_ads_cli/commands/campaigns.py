@@ -4,8 +4,13 @@ import click
 
 from ..cli import handle_errors
 
-#: Valid Sponsored Products dynamic bidding strategies.
-BIDDING_STRATEGIES = ["LEGACY_FOR_SALES", "AUTO_FOR_SALES", "MANUAL", "RULE_BASED"]
+#: Valid Sponsored Products dynamic bidding strategies mapped to Seller Central UI labels.
+BIDDING_STRATEGIES = {
+    "LEGACY_FOR_SALES": "Down only",
+    "AUTO_FOR_SALES": "Up and down",
+    "MANUAL": "Fixed bid",
+    "RULE_BASED": "Rule-based",
+}
 
 #: Maps friendly option names to Amazon API placement values.
 PLACEMENTS = {
@@ -141,8 +146,8 @@ def register_campaigns_commands(cli_group, ensure_auth_client):
     @click.option(
         "--strategy",
         required=True,
-        type=click.Choice(BIDDING_STRATEGIES, case_sensitive=False),
-        help="Dynamic bidding strategy",
+        type=click.Choice(list(BIDDING_STRATEGIES.keys()), case_sensitive=False),
+        help="Dynamic bidding strategy. " + ", ".join(f"{k} ({v})" for k, v in BIDDING_STRATEGIES.items()),
     )
     @click.pass_context
     @handle_errors
