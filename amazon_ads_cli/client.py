@@ -77,6 +77,25 @@ class AdsAPIClient:
             marketplace=self.marketplace, credentials=self.credentials
         ).delete_negative_keywords(body=body)
 
+    def list_negative_product_targets(self, body=None):
+        """List negative product targets."""
+        body = body or {}
+        return sponsored_products.NegativeTargetsV3(
+            marketplace=self.marketplace, credentials=self.credentials
+        ).list_negative_product_targets(body=body)
+
+    def create_negative_product_targets(self, body):
+        """Create negative product targets."""
+        return sponsored_products.NegativeTargetsV3(
+            marketplace=self.marketplace, credentials=self.credentials
+        ).create_negative_product_targets(body=body)
+
+    def delete_negative_product_targets(self, body):
+        """Delete negative product targets."""
+        return sponsored_products.NegativeTargetsV3(
+            marketplace=self.marketplace, credentials=self.credentials
+        ).delete_negative_product_targets(body=body)
+
     def list_product_targets(self, body=None):
         """List product targets."""
         body = body or {}

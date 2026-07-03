@@ -36,7 +36,7 @@ class TestCampaigns:
         mock_auth = Mock()
         mock_auth_class.return_value = mock_auth
 
-        result = runner.invoke(cli, ["campaigns", "pause", "camp-123"])
+        result = runner.invoke(cli, ["campaigns", "camp-123", "pause"])
         assert result.exit_code == 0
         assert "paused" in result.output
         mock_client.edit_campaigns.assert_called_once()
@@ -51,7 +51,7 @@ class TestCampaigns:
         mock_auth = Mock()
         mock_auth_class.return_value = mock_auth
 
-        result = runner.invoke(cli, ["campaigns", "enable", "camp-123"])
+        result = runner.invoke(cli, ["campaigns", "camp-123", "enable"])
         assert result.exit_code == 0
         assert "enabled" in result.output
 
@@ -65,7 +65,7 @@ class TestCampaigns:
         mock_auth = Mock()
         mock_auth_class.return_value = mock_auth
 
-        result = runner.invoke(cli, ["campaigns", "budget", "camp-123", "50.0"])
+        result = runner.invoke(cli, ["campaigns", "camp-123", "budget", "50.0"])
         assert result.exit_code == 0
         assert "$50.0" in result.output
 
@@ -92,7 +92,7 @@ class TestCampaigns:
         mock_auth = Mock()
         mock_auth_class.return_value = mock_auth
 
-        result = runner.invoke(cli, ["campaigns", "bidding", "camp-123", "--strategy", "AUTO_FOR_SALES"])
+        result = runner.invoke(cli, ["campaigns", "camp-123", "bidding", "--strategy", "AUTO_FOR_SALES"])
         assert result.exit_code == 0
         assert "AUTO_FOR_SALES" in result.output
         mock_client.edit_campaigns.assert_called_once()
@@ -123,7 +123,7 @@ class TestCampaigns:
         mock_auth_class.return_value = mock_auth
 
         result = runner.invoke(
-            cli, ["campaigns", "placement", "camp-123", "--top-of-search", "50", "--product-page", "20"]
+            cli, ["campaigns", "camp-123", "placement", "--top-of-search", "50", "--product-page", "20"]
         )
         assert result.exit_code == 0
         assert "PLACEMENT_TOP" in result.output
@@ -149,6 +149,6 @@ class TestCampaigns:
         mock_auth = Mock()
         mock_auth_class.return_value = mock_auth
 
-        result = runner.invoke(cli, ["campaigns", "placement", "camp-123"])
+        result = runner.invoke(cli, ["campaigns", "camp-123", "placement"])
         assert result.exit_code != 0
         mock_client.edit_campaigns.assert_not_called()
