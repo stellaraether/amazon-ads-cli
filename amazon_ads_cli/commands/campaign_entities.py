@@ -5,6 +5,7 @@ import re
 import click
 
 from ..cli import handle_errors
+from .auto_targets import register_auto_targets_commands
 
 _ASIN_RE = re.compile(r"^[Bb][0-9A-Za-z]{9}$")
 
@@ -490,3 +491,8 @@ def register_adgroups_campaign_commands(campaign_group, ensure_auth_client):
             name = ag["name"][:28]
             state = ag["state"]
             click.echo(f"{ag_id:<20} {camp_id:<20} {name:<30} {state}")
+
+
+def register_auto_targets_campaign_commands(campaign_group, ensure_auth_client):
+    """Register auto-targeting group commands scoped to a campaign ID context."""
+    register_auto_targets_commands(campaign_group, ensure_auth_client, "campaign")

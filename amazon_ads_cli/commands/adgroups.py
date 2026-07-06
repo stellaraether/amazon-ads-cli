@@ -5,6 +5,7 @@ import click
 from ..cli import handle_errors
 from .adgroup_entities import (
     register_asin_targets_adgroup_commands,
+    register_auto_targets_adgroup_commands,
     register_keywords_adgroup_commands,
     register_negative_asin_targets_adgroup_commands,
     register_negatives_adgroup_commands,
@@ -23,6 +24,7 @@ class _AdgroupEntityGroup(click.Group):
         register_negative_asin_targets_adgroup_commands(self, ensure_auth_client)
         register_keywords_adgroup_commands(self, ensure_auth_client)
         register_targets_adgroup_commands(self, ensure_auth_client)
+        register_auto_targets_adgroup_commands(self, ensure_auth_client)
 
 
 class AdgroupGroup(click.Group):
