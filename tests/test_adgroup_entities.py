@@ -154,3 +154,77 @@ class TestAdgroupEntities:
         assert result.exit_code == 0
         assert "bid updated" in result.output
         mock_client.edit_keyword.assert_called_once_with("kw-1", body={"keywords": [{"keywordId": "kw-1", "bid": 2.5}]})
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_adgroup_auto_targets_list(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.list_product_targets.return_value = Mock(
+            payload={
+                "targetingClauses": [
+                    {
+                        "targetId": "tgt-substitutes",
+                        "adGroupId": "ag-123",
+                        "campaignId": "camp-123",
+                        "expression": [{"type": "ASIN_SUBSTITUTE_RELATED"}],
+                        "expressionType": "AUTO",
+                        "state": "ENABLED",
+                        "bid": 0.55,
+                    },
+                    {
+                        "targetId": "tgt-complements",
+                        "adGroupId": "ag-123",
+                        "campaignId": "camp-123",
+                        "expression": [{"type": "ASIN_ACCESSORY_RELATED"}],
+                        "expressionType": "AUTO",
+                        "state": "PAUSED",
+                        "bid": 0.4,
+                    },
+                ]
+            }
+        )
+        mock_client.list_ad_groups.return_value = Mock(
+            payload={"adGroups": [{"adGroupId": "ag-123", "defaultBid": 0.3}]}
+        )
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(cli, ["adgroups", "ag-123", "auto-targets", "list"])
+        assert result.exit_code == 0
+        assert "substitutes" in result.output
+        assert "complements" in result.output
+        assert "PAUSED" in result.output
+        mock_client.list_product_targets.assert_called_once_with(body={"adGroupIdFilter": {"include": ["ag-123"]}})
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_adgroup_auto_targets_set_bid(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.list_product_targets.return_value = Mock(
+            payload={
+                "targetingClauses": [
+                    {
+                        "targetId": "tgt-substitutes",
+                        "adGroupId": "ag-123",
+                        "campaignId": "camp-123",
+                        "expression": [{"type": "ASIN_SUBSTITUTE_RELATED"}],
+                        "expressionType": "AUTO",
+                        "state": "ENABLED",
+                    }
+                ]
+            }
+        )
+        mock_client.edit_product_targets.return_value = Mock(payload={})
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(cli, ["adgroups", "ag-123", "auto-targets", "set", "substitutes", "--bid", "1.25"])
+        assert result.exit_code == 0
+        assert "Updated substitutes" in result.output
+        mock_client.edit_product_targets.assert_called_once_with(
+            body={"targetingClauses": [{"targetId": "tgt-substitutes", "bid": 1.25}]}
+        )

@@ -109,11 +109,23 @@ class AdsAPIClient:
             marketplace=self.marketplace, credentials=self.credentials
         ).create_product_targets(body=body)
 
+    def edit_product_targets(self, body):
+        """Edit product targets."""
+        return sponsored_products.TargetsV3(
+            marketplace=self.marketplace, credentials=self.credentials
+        ).edit_product_targets(body=body)
+
     def delete_product_targets(self, body):
         """Delete product targets."""
         return sponsored_products.TargetsV3(
             marketplace=self.marketplace, credentials=self.credentials
         ).delete_product_targets(body=body)
+
+    def get_targeting_bid_recommendations(self, body):
+        """Get theme-based bid recommendations for targeting expressions."""
+        return sponsored_products.BidRecommendationsV3(
+            marketplace=self.marketplace, credentials=self.credentials
+        ).get_bid_recommendations(body=body)
 
     def post_report(self, body):
         """Submit a report request."""

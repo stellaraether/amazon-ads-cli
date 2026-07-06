@@ -173,3 +173,112 @@ class TestCampaignEntities:
         result = runner.invoke(cli, ["campaigns", "camp-123", "adgroups", "list"])
         assert result.exit_code == 0
         assert "Test" in result.output
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_campaign_auto_targets_list(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.list_product_targets.return_value = Mock(
+            payload={
+                "targetingClauses": [
+                    {
+                        "targetId": "tgt-close",
+                        "adGroupId": "ag-1",
+                        "campaignId": "camp-123",
+                        "expression": [{"type": "QUERY_HIGH_REL_MATCHES"}],
+                        "expressionType": "AUTO",
+                        "state": "ENABLED",
+                        "bid": 0.8,
+                    },
+                    {
+                        "targetId": "tgt-loose",
+                        "adGroupId": "ag-1",
+                        "campaignId": "camp-123",
+                        "expression": [{"type": "QUERY_BROAD_REL_MATCHES"}],
+                        "expressionType": "AUTO",
+                        "state": "ENABLED",
+                        "bid": 0.4,
+                    },
+                ]
+            }
+        )
+        mock_client.list_ad_groups.return_value = Mock(payload={"adGroups": [{"adGroupId": "ag-1", "defaultBid": 0.3}]})
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(cli, ["campaigns", "camp-123", "auto-targets", "list"])
+        assert result.exit_code == 0
+        assert "close-match" in result.output
+        assert "loose-match" in result.output
+        assert "+167%" in result.output
+        assert "+33%" in result.output
+        mock_client.list_product_targets.assert_called_once_with(body={"campaignIdFilter": {"include": ["camp-123"]}})
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_campaign_auto_targets_set_state(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.list_product_targets.return_value = Mock(
+            payload={
+                "targetingClauses": [
+                    {
+                        "targetId": "tgt-close",
+                        "adGroupId": "ag-1",
+                        "campaignId": "camp-123",
+                        "expression": [{"type": "QUERY_HIGH_REL_MATCHES"}],
+                        "expressionType": "AUTO",
+                        "state": "ENABLED",
+                    }
+                ]
+            }
+        )
+        mock_client.edit_product_targets.return_value = Mock(payload={})
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(
+            cli, ["campaigns", "camp-123", "auto-targets", "set", "close-match", "--state", "disabled"]
+        )
+        assert result.exit_code == 0
+        assert "Updated close-match" in result.output
+        mock_client.edit_product_targets.assert_called_once_with(
+            body={"targetingClauses": [{"targetId": "tgt-close", "state": "DISABLED"}]}
+        )
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_campaign_auto_targets_set_bid_adjustment(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.list_product_targets.return_value = Mock(
+            payload={
+                "targetingClauses": [
+                    {
+                        "targetId": "tgt-close",
+                        "adGroupId": "ag-1",
+                        "campaignId": "camp-123",
+                        "expression": [{"type": "QUERY_HIGH_REL_MATCHES"}],
+                        "expressionType": "AUTO",
+                        "state": "ENABLED",
+                    }
+                ]
+            }
+        )
+        mock_client.list_ad_groups.return_value = Mock(payload={"adGroups": [{"adGroupId": "ag-1", "defaultBid": 0.3}]})
+        mock_client.edit_product_targets.return_value = Mock(payload={})
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(
+            cli, ["campaigns", "camp-123", "auto-targets", "set", "close-match", "--bid-adjustment", "20"]
+        )
+        assert result.exit_code == 0
+        assert "Updated close-match" in result.output
+        mock_client.edit_product_targets.assert_called_once_with(
+            body={"targetingClauses": [{"targetId": "tgt-close", "bid": 0.36}]}
+        )

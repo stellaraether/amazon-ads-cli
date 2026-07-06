@@ -5,6 +5,7 @@ import re
 import click
 
 from ..cli import handle_errors
+from .auto_targets import register_auto_targets_commands
 
 _ASIN_RE = re.compile(r"^[Bb][0-9A-Za-z]{9}$")
 
@@ -460,3 +461,8 @@ def register_targets_adgroup_commands(adgroup_group, ensure_auth_client):
         _, client = ensure_auth_client(ctx)
         client.delete_product_targets(body={"targetIdFilter": {"include": [target_id]}})
         click.echo(f"✅ Deleted target: {target_id}")
+
+
+def register_auto_targets_adgroup_commands(adgroup_group, ensure_auth_client):
+    """Register auto-targeting group commands scoped to an ad group ID context."""
+    register_auto_targets_commands(adgroup_group, ensure_auth_client, "ad_group")
