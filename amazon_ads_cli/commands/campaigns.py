@@ -27,6 +27,7 @@ BIDDING_STRATEGIES = {
 PLACEMENTS = {
     "top_of_search": "PLACEMENT_TOP",
     "product_page": "PLACEMENT_PRODUCT_PAGE",
+    "rest_of_search": "PLACEMENT_REST_OF_SEARCH",
 }
 
 
@@ -46,7 +47,11 @@ def _format_placement(camp):
     for adj in placement_bidding:
         placement = adj.get("placement", "")
         percentage = adj.get("percentage")
-        label = {"PLACEMENT_TOP": "Top", "PLACEMENT_PRODUCT_PAGE": "Product"}.get(placement, placement)
+        label = {
+            "PLACEMENT_TOP": "Top",
+            "PLACEMENT_PRODUCT_PAGE": "Product",
+            "PLACEMENT_REST_OF_SEARCH": "Rest",
+        }.get(placement, placement)
         parts.append(f"{label} {percentage}%")
     return ", ".join(parts) if parts else "N/A"
 
@@ -179,11 +184,12 @@ def _register_campaign_management_commands(group, ensure_auth_client):
     @group.command("placement")
     @click.option("--top-of-search", type=float, help="Top of search bid adjustment percentage")
     @click.option("--product-page", type=float, help="Product page bid adjustment percentage")
+    @click.option("--rest-of-search", type=float, help="Rest of search bid adjustment percentage")
     @click.pass_context
     @handle_errors
-    def set_placement(ctx, top_of_search, product_page):
+    def set_placement(ctx, top_of_search, product_page, rest_of_search):
         """Set placement bid adjustments for this campaign."""
-        if top_of_search is None and product_page is None:
+        if top_of_search is None and product_page is None and rest_of_search is None:
             raise click.UsageError("At least one placement adjustment is required.")
 
         _, client = ensure_auth_client(ctx)
@@ -294,6 +300,7 @@ def register_campaigns_commands(cli_group, ensure_auth_client):
     )
     @click.option("--top-of-search", type=float, help="Top of search bid adjustment percentage")
     @click.option("--product-page", type=float, help="Product page bid adjustment percentage")
+    @click.option("--rest-of-search", type=float, help="Rest of search bid adjustment percentage")
     @click.option("--portfolio-id", type=int, help="Portfolio ID")
     @click.pass_context
     @handle_errors
@@ -308,10 +315,13 @@ def register_campaigns_commands(cli_group, ensure_auth_client):
         bidding_strategy,
         top_of_search,
         product_page,
+        rest_of_search,
         portfolio_id,
     ):
         """Create a new Sponsored Products campaign."""
-        if (top_of_search is not None or product_page is not None) and bidding_strategy is None:
+        if (
+            top_of_search is not None or product_page is not None or rest_of_search is not None
+        ) and bidding_strategy is None:
             raise click.UsageError("--bidding-strategy is required when placement adjustments are provided.")
 
         _, client = ensure_auth_client(ctx)

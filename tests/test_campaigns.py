@@ -123,7 +123,18 @@ class TestCampaigns:
         mock_auth_class.return_value = mock_auth
 
         result = runner.invoke(
-            cli, ["campaigns", "camp-123", "placement", "--top-of-search", "50", "--product-page", "20"]
+            cli,
+            [
+                "campaigns",
+                "camp-123",
+                "placement",
+                "--top-of-search",
+                "50",
+                "--product-page",
+                "20",
+                "--rest-of-search",
+                "5",
+            ],
         )
         assert result.exit_code == 0
         assert "PLACEMENT_TOP" in result.output
@@ -134,6 +145,36 @@ class TestCampaigns:
         assert dynamic_bidding["placementBidding"] == [
             {"placement": "PLACEMENT_TOP", "percentage": 50.0},
             {"placement": "PLACEMENT_PRODUCT_PAGE", "percentage": 20.0},
+            {"placement": "PLACEMENT_REST_OF_SEARCH", "percentage": 5.0},
+        ]
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_set_placement_only_rest_of_search(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.list_campaigns.return_value = Mock(
+            payload={
+                "campaigns": [
+                    {
+                        "campaignId": "camp-123",
+                        "dynamicBidding": {"strategy": "AUTO_FOR_SALES", "placementBidding": []},
+                    }
+                ]
+            }
+        )
+        mock_client.edit_campaigns.return_value = Mock(payload={})
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(cli, ["campaigns", "camp-123", "placement", "--rest-of-search", "15"])
+        assert result.exit_code == 0
+        mock_client.edit_campaigns.assert_called_once()
+        call_body = mock_client.edit_campaigns.call_args[1]["body"]
+        dynamic_bidding = call_body["campaigns"][0]["dynamicBidding"]
+        assert dynamic_bidding["placementBidding"] == [
+            {"placement": "PLACEMENT_REST_OF_SEARCH", "percentage": 15.0},
         ]
 
     @patch("amazon_ads_cli.cli.AdsAuth")
@@ -224,6 +265,8 @@ class TestCampaigns:
                 "25",
                 "--product-page",
                 "10",
+                "--rest-of-search",
+                "5",
                 "--portfolio-id",
                 "123",
             ],
@@ -241,11 +284,15 @@ class TestCampaigns:
         assert campaign["dynamicBidding"]["placementBidding"] == [
             {"placement": "PLACEMENT_TOP", "percentage": 25.0},
             {"placement": "PLACEMENT_PRODUCT_PAGE", "percentage": 10.0},
+            {"placement": "PLACEMENT_REST_OF_SEARCH", "percentage": 5.0},
         ]
 
+    @pytest.mark.parametrize("placement_option", ["--top-of-search", "--product-page", "--rest-of-search"])
     @patch("amazon_ads_cli.cli.AdsAuth")
     @patch("amazon_ads_cli.cli.AdsAPIClient")
-    def test_create_campaign_requires_bidding_strategy_for_placement(self, mock_client_class, mock_auth_class, runner):
+    def test_create_campaign_requires_bidding_strategy_for_placement(
+        self, mock_client_class, mock_auth_class, runner, placement_option
+    ):
         mock_client = Mock()
         mock_client_class.return_value = mock_client
 
@@ -263,7 +310,7 @@ class TestCampaigns:
                 "10.0",
                 "--targeting-type",
                 "AUTO",
-                "--top-of-search",
+                placement_option,
                 "20",
             ],
         )
