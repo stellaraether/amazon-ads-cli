@@ -32,6 +32,12 @@ class AdsAPIClient:
             marketplace=self.marketplace, credentials=self.credentials
         ).edit_campaigns(body=body)
 
+    def create_campaigns(self, body):
+        """Create campaigns."""
+        return sponsored_products.CampaignsV3(
+            marketplace=self.marketplace, credentials=self.credentials
+        ).create_campaigns(body=body)
+
     def list_ad_groups(self, body=None):
         """List ad groups."""
         body = body or {}

@@ -58,13 +58,17 @@ class TestAdsAPIClient:
         mock_instance.create_negative_product_targets.assert_called_once_with(body=body)
 
     @patch("amazon_ads_cli.client.sponsored_products")
-    def test_delete_negative_product_targets(self, mock_sp, client):
-        """Test delete_negative_product_targets delegates to NegativeTargetsV3."""
+    def test_create_campaigns(self, mock_sp, client):
+        """Test create_campaigns delegates to CampaignsV3."""
         mock_instance = Mock()
-        mock_instance.delete_negative_product_targets.return_value = Mock(payload={})
-        mock_sp.NegativeTargetsV3.return_value = mock_instance
+        mock_instance.create_campaigns.return_value = Mock(
+            payload={"campaigns": {"success": [{"campaignId": "camp-123"}]}}
+        )
+        mock_sp.CampaignsV3.return_value = mock_instance
 
-        body = {"negativeTargetIdFilter": {"include": ["ntgt-123"]}}
-        client.delete_negative_product_targets(body=body)
+        body = {"campaigns": [{"name": "Test", "budget": {"budgetType": "DAILY", "budget": 50.0}}]}
+        result = client.create_campaigns(body=body)
 
-        mock_instance.delete_negative_product_targets.assert_called_once_with(body=body)
+        mock_sp.CampaignsV3.assert_called_once()
+        mock_instance.create_campaigns.assert_called_once_with(body=body)
+        assert result.payload["campaigns"]["success"][0]["campaignId"] == "camp-123"

@@ -1,5 +1,7 @@
 """Campaign management commands."""
 
+import re
+
 import click
 
 from ..cli import handle_errors
@@ -47,6 +49,27 @@ def _format_placement(camp):
         label = {"PLACEMENT_TOP": "Top", "PLACEMENT_PRODUCT_PAGE": "Product"}.get(placement, placement)
         parts.append(f"{label} {percentage}%")
     return ", ".join(parts) if parts else "N/A"
+
+
+_ISO_DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
+_COMPACT_DATE_RE = re.compile(r"^(\d{4})(\d{2})(\d{2})$")
+
+
+def _normalize_date(date_value):
+    """Return YYYY-MM-DD, converting YYYYMMDD if necessary.
+
+    The Amazon Advertising API v3 accepts ISO-style dates (YYYY-MM-DD) for
+    campaign start/end dates even though the client library docstrings claim
+    YYYYMMDD.
+    """
+    if date_value is None:
+        return None
+    if _ISO_DATE_RE.match(date_value):
+        return date_value
+    match = _COMPACT_DATE_RE.match(date_value)
+    if match:
+        return f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
+    raise click.BadParameter(f"Invalid date '{date_value}'. Expected YYYY-MM-DD or YYYYMMDD.")
 
 
 def _fetch_campaign(client, campaign_id):
@@ -245,6 +268,98 @@ def register_campaigns_commands(cli_group, ensure_auth_client):
     def campaigns():
         """Campaign management commands."""
         pass
+
+    @campaigns.command("create")
+    @click.option("--name", required=True, help="Campaign name (max 128 characters)")
+    @click.option("--budget", required=True, type=float, help="Daily budget amount")
+    @click.option(
+        "--targeting-type",
+        required=True,
+        type=click.Choice(["AUTO", "MANUAL"], case_sensitive=False),
+        help="Campaign targeting type",
+    )
+    @click.option(
+        "--state",
+        default="ENABLED",
+        type=click.Choice(["ENABLED", "PAUSED"], case_sensitive=False),
+        show_default=True,
+        help="Initial campaign state",
+    )
+    @click.option("--start-date", help="Start date (YYYY-MM-DD or YYYYMMDD)")
+    @click.option("--end-date", help="End date (YYYY-MM-DD or YYYYMMDD)")
+    @click.option(
+        "--bidding-strategy",
+        type=click.Choice(list(BIDDING_STRATEGIES.keys()), case_sensitive=False),
+        help="Dynamic bidding strategy. " + ", ".join(f"{k} ({v})" for k, v in BIDDING_STRATEGIES.items()),
+    )
+    @click.option("--top-of-search", type=float, help="Top of search bid adjustment percentage")
+    @click.option("--product-page", type=float, help="Product page bid adjustment percentage")
+    @click.option("--portfolio-id", type=int, help="Portfolio ID")
+    @click.pass_context
+    @handle_errors
+    def create_campaign(
+        ctx,
+        name,
+        budget,
+        targeting_type,
+        state,
+        start_date,
+        end_date,
+        bidding_strategy,
+        top_of_search,
+        product_page,
+        portfolio_id,
+    ):
+        """Create a new Sponsored Products campaign."""
+        if (top_of_search is not None or product_page is not None) and bidding_strategy is None:
+            raise click.UsageError("--bidding-strategy is required when placement adjustments are provided.")
+
+        _, client = ensure_auth_client(ctx)
+
+        campaign = {
+            "name": name,
+            "state": state.upper(),
+            "budget": {"budgetType": "DAILY", "budget": budget},
+            "targetingType": targeting_type.upper(),
+        }
+
+        if portfolio_id is not None:
+            campaign["portfolioId"] = portfolio_id
+
+        normalized_start = _normalize_date(start_date)
+        if normalized_start is not None:
+            campaign["startDate"] = normalized_start
+
+        normalized_end = _normalize_date(end_date)
+        if normalized_end is not None:
+            campaign["endDate"] = normalized_end
+
+        placement_bidding = []
+        for option, placement in PLACEMENTS.items():
+            value = locals()[option]
+            if value is not None:
+                placement_bidding.append({"placement": placement, "percentage": value})
+
+        if bidding_strategy is not None or placement_bidding:
+            campaign["dynamicBidding"] = {
+                "strategy": bidding_strategy.upper() if bidding_strategy else "AUTO_FOR_SALES",
+                "placementBidding": placement_bidding,
+            }
+
+        result = client.create_campaigns(body={"campaigns": [campaign]})
+        response = result.payload.get("campaigns", {})
+        success = response.get("success", [])
+        errors = response.get("error", [])
+
+        if errors:
+            error_detail = errors[0].get("details", errors[0].get("message", str(errors[0])))
+            raise click.ClickException(f"Campaign creation failed: {error_detail}")
+
+        if success:
+            created = success[0]
+            click.echo(f"✅ Created campaign: {name} (ID: {created.get('campaignId', 'N/A')})")
+        else:
+            click.echo("✅ Campaign created")
 
     @campaigns.command("list")
     @click.pass_context
