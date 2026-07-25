@@ -152,3 +152,148 @@ class TestCampaigns:
         result = runner.invoke(cli, ["campaigns", "camp-123", "placement"])
         assert result.exit_code != 0
         mock_client.edit_campaigns.assert_not_called()
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_create_campaign(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.create_campaigns.return_value = Mock(
+            payload={"campaigns": {"success": [{"campaignId": "camp-123"}]}}
+        )
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(
+            cli,
+            [
+                "campaigns",
+                "create",
+                "--name",
+                "Test Campaign",
+                "--budget",
+                "50.0",
+                "--targeting-type",
+                "MANUAL",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Created campaign" in result.output
+        assert "camp-123" in result.output
+        mock_client.create_campaigns.assert_called_once()
+        call_body = mock_client.create_campaigns.call_args[1]["body"]
+        campaign = call_body["campaigns"][0]
+        assert campaign["name"] == "Test Campaign"
+        assert campaign["budget"] == {"budgetType": "DAILY", "budget": 50.0}
+        assert campaign["targetingType"] == "MANUAL"
+        assert campaign["state"] == "ENABLED"
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_create_campaign_with_options(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.create_campaigns.return_value = Mock(
+            payload={"campaigns": {"success": [{"campaignId": "camp-456"}]}}
+        )
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(
+            cli,
+            [
+                "campaigns",
+                "create",
+                "--name",
+                "Auto Campaign",
+                "--budget",
+                "25.0",
+                "--targeting-type",
+                "AUTO",
+                "--state",
+                "PAUSED",
+                "--start-date",
+                "2026-08-01",
+                "--end-date",
+                "2026-08-31",
+                "--bidding-strategy",
+                "LEGACY_FOR_SALES",
+                "--top-of-search",
+                "25",
+                "--product-page",
+                "10",
+                "--portfolio-id",
+                "123",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "camp-456" in result.output
+        call_body = mock_client.create_campaigns.call_args[1]["body"]
+        campaign = call_body["campaigns"][0]
+        assert campaign["name"] == "Auto Campaign"
+        assert campaign["state"] == "PAUSED"
+        assert campaign["startDate"] == "2026-08-01"
+        assert campaign["endDate"] == "2026-08-31"
+        assert campaign["portfolioId"] == 123
+        assert campaign["dynamicBidding"]["strategy"] == "LEGACY_FOR_SALES"
+        assert campaign["dynamicBidding"]["placementBidding"] == [
+            {"placement": "PLACEMENT_TOP", "percentage": 25.0},
+            {"placement": "PLACEMENT_PRODUCT_PAGE", "percentage": 10.0},
+        ]
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_create_campaign_requires_bidding_strategy_for_placement(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(
+            cli,
+            [
+                "campaigns",
+                "create",
+                "--name",
+                "Test",
+                "--budget",
+                "10.0",
+                "--targeting-type",
+                "AUTO",
+                "--top-of-search",
+                "20",
+            ],
+        )
+        assert result.exit_code != 0
+        mock_client.create_campaigns.assert_not_called()
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_create_campaign_reports_errors(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.create_campaigns.return_value = Mock(
+            payload={"campaigns": {"error": [{"details": "Name is too long"}]}}
+        )
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(
+            cli,
+            [
+                "campaigns",
+                "create",
+                "--name",
+                "A" * 200,
+                "--budget",
+                "10.0",
+                "--targeting-type",
+                "AUTO",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "Name is too long" in result.output
