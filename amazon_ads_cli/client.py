@@ -45,6 +45,49 @@ class AdsAPIClient:
             body=body
         )
 
+    def create_ad_groups(self, body):
+        """Create ad groups, returning the created objects."""
+        return sponsored_products.AdGroupsV3(
+            marketplace=self.marketplace, credentials=self.credentials
+        ).create_ad_groups(body=body, prefer=True)
+
+    def edit_ad_groups(self, body):
+        """Edit ad groups, returning the updated objects."""
+        return sponsored_products.AdGroupsV3(marketplace=self.marketplace, credentials=self.credentials).edit_ad_groups(
+            body=body, prefer=True
+        )
+
+    def delete_ad_groups(self, body):
+        """Delete ad groups."""
+        return sponsored_products.AdGroupsV3(
+            marketplace=self.marketplace, credentials=self.credentials
+        ).delete_ad_groups(body=body)
+
+    def list_product_ads(self, body=None):
+        """List product ads."""
+        body = body or {}
+        return sponsored_products.ProductAdsV3(
+            marketplace=self.marketplace, credentials=self.credentials
+        ).list_product_ads(body=body)
+
+    def create_product_ads(self, body):
+        """Create product ads, returning the created objects."""
+        return sponsored_products.ProductAdsV3(
+            marketplace=self.marketplace, credentials=self.credentials
+        ).create_product_ads(body=body, prefer=True)
+
+    def edit_product_ads(self, body):
+        """Edit product ads, returning the updated objects."""
+        return sponsored_products.ProductAdsV3(
+            marketplace=self.marketplace, credentials=self.credentials
+        ).edit_product_ads(body=body, prefer=True)
+
+    def delete_product_ads(self, body):
+        """Delete product ads."""
+        return sponsored_products.ProductAdsV3(
+            marketplace=self.marketplace, credentials=self.credentials
+        ).delete_product_ads(body=body)
+
     def list_keywords(self, body=None):
         """List keywords."""
         body = body or {}

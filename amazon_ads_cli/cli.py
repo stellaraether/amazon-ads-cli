@@ -86,6 +86,20 @@ def handle_errors(f):
     return wrapper
 
 
+def extract_error_detail(error_entry):
+    """Extract a readable message from a v3 API per-item error entry."""
+    detail = error_entry.get("details") or error_entry.get("message")
+    if detail:
+        return detail
+    nested = error_entry.get("errors") or []
+    if nested and isinstance(nested[0], dict):
+        error_value = nested[0].get("errorValue") or {}
+        for sub in error_value.values():
+            if isinstance(sub, dict) and sub.get("message"):
+                return sub["message"]
+    return str(error_entry)
+
+
 @click.version_option(version=__version__, prog_name="amz-ads")
 @click.group()
 @click.option("--credentials", "-c", help="Path to credentials YAML file")
