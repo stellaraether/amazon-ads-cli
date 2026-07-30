@@ -4,7 +4,7 @@ import re
 
 import click
 
-from ..cli import handle_errors
+from ..cli import extract_error_detail, handle_errors
 from .auto_targets import register_auto_targets_commands
 
 _ASIN_RE = re.compile(r"^[Bb][0-9A-Za-z]{9}$")
@@ -491,6 +491,104 @@ def register_adgroups_campaign_commands(campaign_group, ensure_auth_client):
             name = ag["name"][:28]
             state = ag["state"]
             click.echo(f"{ag_id:<20} {camp_id:<20} {name:<30} {state}")
+
+    @adgroups.command("create")
+    @click.option("--name", required=True, help="Ad group name")
+    @click.option("--default-bid", required=True, type=float, help="Default bid amount in dollars")
+    @click.option(
+        "--state",
+        default="ENABLED",
+        type=click.Choice(["ENABLED", "PAUSED"], case_sensitive=False),
+        show_default=True,
+        help="Initial ad group state",
+    )
+    @click.pass_context
+    @handle_errors
+    def create_adgroup(ctx, name, default_bid, state):
+        """Create an ad group in this campaign.
+
+        In an AUTO-targeting campaign, Amazon auto-provisions the four
+        auto-targeting clauses at the ad group default bid.
+        """
+        _, client = ensure_auth_client(ctx)
+        campaign_id = ctx.obj["campaign_id"]
+        result = client.create_ad_groups(
+            body={
+                "adGroups": [
+                    {
+                        "name": name,
+                        "campaignId": campaign_id,
+                        "defaultBid": default_bid,
+                        "state": state.upper(),
+                    }
+                ]
+            }
+        )
+        response = result.payload.get("adGroups", {})
+        errors = response.get("error", [])
+        if errors:
+            raise click.ClickException(f"Ad group creation failed: {extract_error_detail(errors[0])}")
+
+        success = response.get("success", [])
+        if success:
+            ad_group_id = success[0].get("adGroupId", "N/A")
+            click.echo(f"✅ Created ad group: {name} (ID: {ad_group_id})")
+        else:
+            click.echo(f"✅ Ad group created: {name}")
+
+
+def register_product_ads_campaign_commands(campaign_group, ensure_auth_client):
+    """Register product ad commands scoped to a campaign ID context."""
+
+    @campaign_group.group("product-ads")
+    def product_ads():
+        """Product ad management commands."""
+        pass
+
+    @product_ads.command("list")
+    @click.pass_context
+    @handle_errors
+    def list_product_ads(ctx):
+        """List product ads for this campaign (excludes archived ads)."""
+        _, client = ensure_auth_client(ctx)
+        campaign_id = ctx.obj["campaign_id"]
+        result = client.list_product_ads(
+            body={
+                "campaignIdFilter": {"include": [campaign_id]},
+                "stateFilter": {"include": ["ENABLED", "PAUSED"]},
+            }
+        )
+        ads = result.payload.get("productAds", [])
+
+        click.echo(f"\n{'Ad ID':<20} {'Ad Group ID':<20} {'SKU':<25} {'ASIN':<15} {'State'}")
+        click.echo("-" * 95)
+        for ad in ads:
+            ad_id = str(ad.get("adId", "N/A"))[:18]
+            ag_id = str(ad.get("adGroupId", "N/A"))[:18]
+            sku = str(ad.get("sku", "N/A"))[:23]
+            asin = str(ad.get("asin", "N/A"))[:13]
+            state = ad.get("state", "N/A")
+            click.echo(f"{ad_id:<20} {ag_id:<20} {sku:<25} {asin:<15} {state}")
+
+    @product_ads.command("list-all")
+    @click.pass_context
+    @handle_errors
+    def list_all_product_ads(ctx):
+        """List all product ads across all campaigns (excludes archived ads)."""
+        _, client = ensure_auth_client(ctx)
+        result = client.list_product_ads(body={"stateFilter": {"include": ["ENABLED", "PAUSED"]}})
+        ads = result.payload.get("productAds", [])
+
+        click.echo(f"\n{'Ad ID':<20} {'Campaign ID':<20} {'Ad Group ID':<20} {'SKU':<25} {'ASIN':<15} {'State'}")
+        click.echo("-" * 115)
+        for ad in ads:
+            ad_id = str(ad.get("adId", "N/A"))[:18]
+            camp_id = str(ad.get("campaignId", "N/A"))[:18]
+            ag_id = str(ad.get("adGroupId", "N/A"))[:18]
+            sku = str(ad.get("sku", "N/A"))[:23]
+            asin = str(ad.get("asin", "N/A"))[:13]
+            state = ad.get("state", "N/A")
+            click.echo(f"{ad_id:<20} {camp_id:<20} {ag_id:<20} {sku:<25} {asin:<15} {state}")
 
 
 def register_auto_targets_campaign_commands(campaign_group, ensure_auth_client):

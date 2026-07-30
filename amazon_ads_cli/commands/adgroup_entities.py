@@ -4,7 +4,7 @@ import re
 
 import click
 
-from ..cli import handle_errors
+from ..cli import extract_error_detail, handle_errors
 from .auto_targets import register_auto_targets_commands
 
 _ASIN_RE = re.compile(r"^[Bb][0-9A-Za-z]{9}$")
@@ -466,3 +466,100 @@ def register_targets_adgroup_commands(adgroup_group, ensure_auth_client):
 def register_auto_targets_adgroup_commands(adgroup_group, ensure_auth_client):
     """Register auto-targeting group commands scoped to an ad group ID context."""
     register_auto_targets_commands(adgroup_group, ensure_auth_client, "ad_group")
+
+
+def register_product_ads_adgroup_commands(adgroup_group, ensure_auth_client):
+    """Register product ad commands scoped to an ad group ID context."""
+
+    @adgroup_group.group("product-ads")
+    def product_ads():
+        """Product ad management commands."""
+        pass
+
+    @product_ads.command("list")
+    @click.pass_context
+    @handle_errors
+    def list_product_ads(ctx):
+        """List product ads for this ad group (excludes archived ads)."""
+        _, client = ensure_auth_client(ctx)
+        ad_group_id = ctx.obj["ad_group_id"]
+        result = client.list_product_ads(
+            body={
+                "adGroupIdFilter": {"include": [ad_group_id]},
+                "stateFilter": {"include": ["ENABLED", "PAUSED"]},
+            }
+        )
+        ads = result.payload.get("productAds", [])
+
+        click.echo(f"\n{'Ad ID':<20} {'SKU':<25} {'ASIN':<15} {'State'}")
+        click.echo("-" * 75)
+        for ad in ads:
+            ad_id = str(ad.get("adId", "N/A"))[:18]
+            sku = str(ad.get("sku", "N/A"))[:23]
+            asin = str(ad.get("asin", "N/A"))[:13]
+            state = ad.get("state", "N/A")
+            click.echo(f"{ad_id:<20} {sku:<25} {asin:<15} {state}")
+
+    @product_ads.command("add")
+    @click.option("--sku", help="Seller SKU of the product to advertise (seller accounts)")
+    @click.option("--asin", help="ASIN of the product to advertise (vendor accounts)")
+    @click.option(
+        "--state",
+        default="ENABLED",
+        type=click.Choice(["ENABLED", "PAUSED"], case_sensitive=False),
+        show_default=True,
+        help="Initial product ad state",
+    )
+    @click.pass_context
+    @handle_errors
+    def add_product_ad(ctx, sku, asin, state):
+        """Attach a product to this ad group. Exactly one of --sku/--asin is required."""
+        if (sku is None) == (asin is None):
+            raise click.UsageError("Exactly one of --sku or --asin is required.")
+
+        _, client = ensure_auth_client(ctx)
+        ad_group_id = ctx.obj["ad_group_id"]
+
+        ad_groups = client.list_ad_groups(
+            body={
+                "adGroupIdFilter": {"include": [ad_group_id]},
+                "stateFilter": {"include": ["ENABLED", "PAUSED", "ARCHIVED"]},
+            }
+        ).payload.get("adGroups", [])
+        if not ad_groups:
+            raise click.ClickException(f"Ad group {ad_group_id} not found")
+        campaign_id = ad_groups[0]["campaignId"]
+
+        product_ad = {
+            "campaignId": campaign_id,
+            "adGroupId": ad_group_id,
+            "state": state.upper(),
+        }
+        if sku is not None:
+            product_ad["sku"] = sku
+        else:
+            product_ad["asin"] = asin
+
+        result = client.create_product_ads(body={"productAds": [product_ad]})
+        response = result.payload.get("productAds", {})
+        errors = response.get("error", [])
+        if errors:
+            raise click.ClickException(f"Product ad creation failed: {extract_error_detail(errors[0])}")
+
+        success = response.get("success", [])
+        product = sku if sku is not None else asin
+        if success:
+            ad_id = success[0].get("adId", "N/A")
+            click.echo(f"✅ Created product ad: {product} (ID: {ad_id})")
+        else:
+            click.echo(f"✅ Product ad created: {product}")
+
+    @product_ads.command("remove")
+    @click.argument("ad-id")
+    @click.pass_context
+    @handle_errors
+    def remove_product_ad(ctx, ad_id):
+        """Remove a product ad by ID."""
+        _, client = ensure_auth_client(ctx)
+        client.delete_product_ads(body={"adIdFilter": {"include": [ad_id]}})
+        click.echo(f"✅ Removed product ad: {ad_id}")

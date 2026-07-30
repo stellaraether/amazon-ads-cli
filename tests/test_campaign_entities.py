@@ -176,6 +176,100 @@ class TestCampaignEntities:
 
     @patch("amazon_ads_cli.cli.AdsAuth")
     @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_campaign_adgroups_create(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.create_ad_groups.return_value = Mock(
+            payload={"adGroups": {"success": [{"adGroupId": "ag-1", "campaignId": "camp-123"}]}}
+        )
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(
+            cli,
+            ["campaigns", "camp-123", "adgroups", "create", "--name", "Catnip", "--default-bid", "0.86"],
+        )
+        assert result.exit_code == 0
+        assert "ag-1" in result.output
+        mock_client.create_ad_groups.assert_called_once_with(
+            body={"adGroups": [{"name": "Catnip", "campaignId": "camp-123", "defaultBid": 0.86, "state": "ENABLED"}]}
+        )
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_campaign_adgroups_create_api_error(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.create_ad_groups.return_value = Mock(
+            payload={"adGroups": {"error": [{"details": "duplicate name"}]}}
+        )
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(
+            cli,
+            ["campaigns", "camp-123", "adgroups", "create", "--name", "Catnip", "--default-bid", "0.86"],
+        )
+        assert result.exit_code != 0
+        assert "duplicate name" in result.output
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_campaign_product_ads_list(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.list_product_ads.return_value = Mock(
+            payload={
+                "productAds": [
+                    {"adId": "ad-1", "adGroupId": "ag-1", "sku": "SKU-1", "asin": "B0ABCDEF12", "state": "ENABLED"}
+                ]
+            }
+        )
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(cli, ["campaigns", "camp-123", "product-ads", "list"])
+        assert result.exit_code == 0
+        assert "SKU-1" in result.output
+        mock_client.list_product_ads.assert_called_once_with(
+            body={
+                "campaignIdFilter": {"include": ["camp-123"]},
+                "stateFilter": {"include": ["ENABLED", "PAUSED"]},
+            }
+        )
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
+    def test_campaign_product_ads_list_all(self, mock_client_class, mock_auth_class, runner):
+        mock_client = Mock()
+        mock_client.list_product_ads.return_value = Mock(
+            payload={
+                "productAds": [
+                    {
+                        "adId": "ad-1",
+                        "campaignId": "camp-123",
+                        "adGroupId": "ag-1",
+                        "sku": "SKU-1",
+                        "state": "ENABLED",
+                    }
+                ]
+            }
+        )
+        mock_client_class.return_value = mock_client
+
+        mock_auth = Mock()
+        mock_auth_class.return_value = mock_auth
+
+        result = runner.invoke(cli, ["campaigns", "camp-123", "product-ads", "list-all"])
+        assert result.exit_code == 0
+        assert "camp-123" in result.output
+        mock_client.list_product_ads.assert_called_once_with(body={"stateFilter": {"include": ["ENABLED", "PAUSED"]}})
+
+    @patch("amazon_ads_cli.cli.AdsAuth")
+    @patch("amazon_ads_cli.cli.AdsAPIClient")
     def test_campaign_auto_targets_list(self, mock_client_class, mock_auth_class, runner):
         mock_client = Mock()
         mock_client.list_product_targets.return_value = Mock(

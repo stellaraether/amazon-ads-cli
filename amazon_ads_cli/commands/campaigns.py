@@ -12,6 +12,7 @@ from .campaign_entities import (
     register_keywords_campaign_commands,
     register_negative_asin_targets_campaign_commands,
     register_negatives_campaign_commands,
+    register_product_ads_campaign_commands,
     register_targets_campaign_commands,
 )
 
@@ -235,6 +236,7 @@ class _CampaignEntityGroup(click.Group):
         register_targets_campaign_commands(self, ensure_auth_client)
         register_auto_targets_campaign_commands(self, ensure_auth_client)
         register_adgroups_campaign_commands(self, ensure_auth_client)
+        register_product_ads_campaign_commands(self, ensure_auth_client)
 
 
 class CampaignGroup(click.Group):
